@@ -65,4 +65,38 @@ const getMe = async (req, res) => {
   res.json({ user: req.user });
 };
 
-module.exports = { register, login, getMe };
+const updateProfile = async (req, res) => {
+  try {
+    const { name, address, currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ error: 'Current password is required to set a new password' });
+      }
+      const result = await db.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+      const valid = await bcrypt.compare(currentPassword, result.rows[0].password_hash);
+      if (!valid) {
+        return res.status(400).json({ error: 'Current password is incorrect' });
+      }
+      const newHash = await bcrypt.hash(newPassword, 10);
+      await db.query(
+        'UPDATE users SET name = $1, address = $2, password_hash = $3 WHERE id = $4 RETURNING id, name, phone, address, role',
+        [name, address, newHash, userId]
+      );
+    } else {
+      await db.query(
+        'UPDATE users SET name = $1, address = $2 WHERE id = $3 RETURNING id, name, phone, address, role',
+        [name, address, userId]
+      );
+    }
+
+    const updated = await db.query('SELECT id, name, phone, address, role FROM users WHERE id = $1', [userId]);
+    res.json({ user: updated.rows[0] });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+module.exports = { register, login, getMe, updateProfile };
