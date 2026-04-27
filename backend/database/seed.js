@@ -2,11 +2,19 @@ const db = require('../src/config/database');
 const bcrypt = require('bcryptjs');
 
 const seedProducts = [
+  // BURGERS
   { 
     name: 'The Signature King', 
     description: 'A 4K-quality masterpiece: double flame-grilled beef, melted aged cheddar, tempura onion rings, and our truffle-infused secret sauce on a toasted brioche bun.', 
     price: 14.99, 
     image_url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=2000&auto=format&fit=crop', 
+    category: 'burgers' 
+  },
+  { 
+    name: 'Dirty Louisiana', 
+    description: 'A Southern classic with a spicy kick! Crispy fried chicken breast, spicy mayo, pickles, lettuce, and our house-made Cajun hot sauce.', 
+    price: 13.99, 
+    image_url: 'https://images.unsplash.com/photo-1525059696034-4967a8e1dca2?q=80&w=2000&auto=format&fit=crop', 
     category: 'burgers' 
   },
   { 
@@ -23,11 +31,19 @@ const seedProducts = [
     image_url: 'https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=2000&auto=format&fit=crop', 
     category: 'burgers' 
   },
+  // FRIES
   { 
     name: 'Classic Golden Fries', 
     description: 'Twice-fried Belgian style potatoes, perfectly salted with sea salt and served with a side of roasted garlic aioli.', 
     price: 4.99, 
     image_url: 'https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?q=80&w=2000&auto=format&fit=crop', 
+    category: 'fries' 
+  },
+  { 
+    name: 'BBQ Bourbon Fries', 
+    description: 'Crispy fries tossed in our signature BBQ-Bourbon seasoning, topped with pulled pork and pickled red onions.', 
+    price: 8.99, 
+    image_url: 'https://images.unsplash.com/photo-1585109649139-366fea07a66c?q=80&w=2000&auto=format&fit=crop', 
     category: 'fries' 
   },
   { 
@@ -44,6 +60,7 @@ const seedProducts = [
     image_url: 'https://images.unsplash.com/photo-1572490128847-f0e92c2c4071?q=80&w=2000&auto=format&fit=crop', 
     category: 'fries' 
   },
+  // DRINKS
   { 
     name: 'Craft Strawberry Shake', 
     description: 'Hand-spun premium strawberry ice cream, topped with fresh berry coulis, whipped cream, and a maraschino cherry.', 
@@ -59,10 +76,25 @@ const seedProducts = [
     category: 'drinks' 
   },
   { 
+    name: 'Oreo Blast Shake', 
+    description: 'Rich vanilla bean ice cream blended with real Oreo chunks, chocolate ganache, and topped with a whole cookie.', 
+    price: 7.49, 
+    image_url: 'https://images.unsplash.com/photo-1572490128847-f0e92c2c4071?q=80&w=2000&auto=format&fit=crop', 
+    category: 'drinks' 
+  },
+  // COMBOS
+  { 
     name: 'The Ultimate Combo', 
     description: 'Any signature burger, a large side of loaded fries, and a premium craft shake of your choice.', 
     price: 24.99, 
     image_url: 'https://images.unsplash.com/photo-1521305916504-4a1121188589?q=80&w=2000&auto=format&fit=crop', 
+    category: 'combos' 
+  },
+  { 
+    name: 'Family Feast', 
+    description: '4 Signature King burgers, 2 large fries, 2 sweet potato fries, and 4 drinks of your choice.', 
+    price: 49.99, 
+    image_url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=2000&auto=format&fit=crop', 
     category: 'combos' 
   }
 ];
