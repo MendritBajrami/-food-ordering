@@ -74,6 +74,7 @@ async function createTables() {
 
     await client.query('COMMIT');
     console.log('All tables created successfully');
+    return true;
   } catch (error) {
     console.error('Migration error specifically:', error.message);
     if (error.code) console.error('Error code:', error.code);
@@ -81,17 +82,21 @@ async function createTables() {
     await client.query('ROLLBACK').catch(() => {});
     throw error;
   } finally {
-    client.release();
-    db.pool.end();
+    if (client) client.release();
   }
 }
 
-createTables()
-  .then(() => {
-    console.log('Migration complete');
-    process.exit(0);
-  })
-  .catch((err) => {
-    console.error('Migration failed:', err.message);
-    process.exit(1);
-  });
+if (require.main === module) {
+  createTables()
+    .then(() => {
+      console.log('Migration complete');
+      db.pool.end();
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error('Migration failed:', err.message);
+      process.exit(1);
+    });
+}
+
+module.exports = { createTables };

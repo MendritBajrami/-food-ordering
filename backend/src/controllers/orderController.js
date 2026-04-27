@@ -7,7 +7,7 @@ const setIO = (socketIO) => {
 };
 
 const createOrder = async (req, res) => {
-  const client = await db.getClient();
+  let client;
   try {
     const { customer_name, phone, address, delivery_type, items } = req.body;
 
@@ -15,6 +15,7 @@ const createOrder = async (req, res) => {
       return res.status(400).json({ error: 'Customer name, phone, delivery type, and items are required' });
     }
 
+    client = await db.getClient();
     await client.query('BEGIN');
 
     let totalPrice = 0;
@@ -59,11 +60,11 @@ const createOrder = async (req, res) => {
 
     res.status(201).json({ order });
   } catch (error) {
-    await client.query('ROLLBACK');
+    if (client) await client.query('ROLLBACK').catch(() => {});
     console.error('Create order error:', error);
     res.status(500).json({ error: 'Server error' });
   } finally {
-    client.release();
+    if (client) client.release();
   }
 };
 

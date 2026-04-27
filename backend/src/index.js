@@ -71,6 +71,20 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const { createTables } = require('../database/migrate');
+
+async function startServer() {
+  try {
+    console.log('Starting server and running migrations...');
+    await createTables();
+    
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('FATAL: Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();
