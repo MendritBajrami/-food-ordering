@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { Product, Category } from '@/lib/types';
@@ -63,29 +64,44 @@ export default function MenuPage() {
 
   return (
     <div className="min-h-screen bg-[#fafafa]">
-      <div className="bg-gradient-to-r from-red-600 to-orange-500 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.h1 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="text-4xl md:text-5xl font-black text-white mb-8 tracking-tight"
-          >
-            Our Menu
-          </motion.h1>
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
+      {/* Cinematic Hero Section */}
+      <div className="relative h-[50vh] flex items-center overflow-hidden">
+        <Image 
+          src="https://images.unsplash.com/photo-1514356021116-dee3f2ef1d4f?q=80&w=2670&auto=format&fit=crop"
+          alt="Hero Background"
+          fill
+          className="object-cover scale-110 blur-[2px]"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="relative max-w-xl group"
+            transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-red-500 transition-colors" />
-            <input
-              type="text"
-              placeholder="Search for something delicious..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-14 pr-6 py-4 rounded-2xl bg-white/95 backdrop-blur-md border-none shadow-xl shadow-red-900/10 focus:ring-4 focus:ring-white/20 outline-none text-lg transition-all"
-            />
+            <span className="inline-block bg-red-500 text-white text-xs font-black uppercase tracking-[0.3em] px-4 py-2 rounded-full mb-6">
+              Our Premium Menu
+            </span>
+            <h1 className="text-5xl md:text-7xl font-black text-white mb-6 tracking-tight leading-none">
+              TASTE THE <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-400">EXCELLENCE</span>
+            </h1>
+            <p className="text-gray-300 text-lg md:text-xl max-w-2xl font-medium leading-relaxed mb-10">
+              Crafted with passion, served with perfection. Discover our selection of gourmet burgers and signature dishes.
+            </p>
+            
+            <div className="relative max-w-xl group">
+              <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-gray-400 group-focus-within:text-red-500 transition-colors" />
+              <input
+                type="text"
+                placeholder="Search for something delicious..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full pl-16 pr-8 py-5 rounded-[2.5rem] bg-white/10 backdrop-blur-xl border border-white/20 text-white placeholder:text-gray-400 focus:bg-white focus:text-gray-900 focus:placeholder:text-gray-400 outline-none text-xl transition-all shadow-2xl"
+              />
+            </div>
           </motion.div>
         </div>
       </div>

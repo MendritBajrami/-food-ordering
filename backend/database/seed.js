@@ -2,21 +2,69 @@ const db = require('../src/config/database');
 const bcrypt = require('bcryptjs');
 
 const seedProducts = [
-  { name: 'Classic Burger', description: 'Juicy beef patty with fresh lettuce, tomato, and our special sauce', price: 8.99, image_url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400', category: 'burgers' },
-  { name: 'Cheese Burger', description: 'Classic burger topped with melted cheddar cheese', price: 9.99, image_url: 'https://images.unsplash.com/photo-1553979459-d22231ba6150?w=400', category: 'burgers' },
-  { name: 'Double Patty Burger', description: 'Two beef patties with bacon, cheese, and all the fixings', price: 12.99, image_url: 'https://images.unsplash.com/photo-1594212699903-ec8a572eca17?w=400', category: 'burgers' },
-  { name: 'Bacon Burger', description: 'Classic burger with crispy bacon strips', price: 10.99, image_url: 'https://images.unsplash.com/photo-1572802419224-296b0a9a81f2?w=400', category: 'burgers' },
-  { name: 'Crispy Fries', description: 'Golden, crispy, and perfectly salted', price: 3.99, image_url: 'https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?w=400', category: 'fries' },
-  { name: 'Loaded Fries', description: 'Fries topped with cheese, bacon, and sour cream', price: 5.99, image_url: 'https://images.unsplash.com/photo-1585109649139-366fea07a66c?w=400', category: 'fries' },
-  { name: 'Onion Rings', description: 'Crispy battered onion rings', price: 4.99, image_url: 'https://images.unsplash.com/photo-1639024471283-1d01b50e1d15?w=400', category: 'fries' },
-  { name: 'Curly Fries', description: 'Spiral-cut crispy fries with seasoning', price: 4.49, image_url: 'https://images.unsplash.com/photo-1572490128847-f0e92c2c4071?w=400', category: 'fries' },
-  { name: 'Cola', description: 'Classic refreshing cola drink', price: 2.49, image_url: 'https://images.unsplash.com/photo-1629203851122-3724ec5812fe?w=400', category: 'drinks' },
-  { name: 'Lemonade', description: 'Fresh squeezed lemonade', price: 2.99, image_url: 'https://images.unsplash.com/photo-1621263764928-df7884f7d8e3?w=400', category: 'drinks' },
-  { name: 'Milkshake', description: 'Creamy vanilla milkshake', price: 4.99, image_url: 'https://images.unsplash.com/photo-1572490128847-f0e92c2c4071?w=400', category: 'drinks' },
-  { name: 'Orange Juice', description: 'Fresh squeezed orange juice', price: 3.49, image_url: 'https://images.unsplash.com/photo-1621506289937-a8e4df240487?w=400', category: 'drinks' },
-  { name: 'Burger Combo', description: 'Classic burger with medium fries and medium drink', price: 14.99, image_url: 'https://images.unsplash.com/photo-1594212699903-ec8a572eca17?w=400', category: 'combos' },
-  { name: 'Family Pack', description: '4 burgers, 2 large fries, 4 drinks', price: 29.99, image_url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400', category: 'combos' },
-  { name: 'Kids Meal', description: 'Small burger, small fries, juice box', price: 8.99, image_url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400', category: 'combos' }
+  { 
+    name: 'The Signature King', 
+    description: 'A 4K-quality masterpiece: double flame-grilled beef, melted aged cheddar, tempura onion rings, and our truffle-infused secret sauce on a toasted brioche bun.', 
+    price: 14.99, 
+    image_url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=2000&auto=format&fit=crop', 
+    category: 'burgers' 
+  },
+  { 
+    name: 'Bacon Smokehouse', 
+    description: 'Crispy thick-cut maple bacon, grilled onions, sharp cheddar, and smoky hickory BBQ sauce over a juicy half-pound patty.', 
+    price: 12.99, 
+    image_url: 'https://images.unsplash.com/photo-1594212699903-ec8a572eca17?q=80&w=2000&auto=format&fit=crop', 
+    category: 'burgers' 
+  },
+  { 
+    name: 'Truffle & Swiss', 
+    description: 'Earthy black truffle mayo, sauteed forest mushrooms, and melted Swiss cheese on a premium Wagyu beef patty.', 
+    price: 13.49, 
+    image_url: 'https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=2000&auto=format&fit=crop', 
+    category: 'burgers' 
+  },
+  { 
+    name: 'Classic Golden Fries', 
+    description: 'Twice-fried Belgian style potatoes, perfectly salted with sea salt and served with a side of roasted garlic aioli.', 
+    price: 4.99, 
+    image_url: 'https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?q=80&w=2000&auto=format&fit=crop', 
+    category: 'fries' 
+  },
+  { 
+    name: 'Loaded Chili-Cheese Fries', 
+    description: 'Golden fries smothered in slow-cooked beef chili, sharp cheddar sauce, jalapeños, and whipped sour cream.', 
+    price: 7.99, 
+    image_url: 'https://images.unsplash.com/photo-1585109649139-366fea07a66c?q=80&w=2000&auto=format&fit=crop', 
+    category: 'fries' 
+  },
+  { 
+    name: 'Sweet Potato Crunch', 
+    description: 'Premium sweet potato fries dusted with cinnamon sugar and salt, served with a chipotle honey dip.', 
+    price: 6.49, 
+    image_url: 'https://images.unsplash.com/photo-1572490128847-f0e92c2c4071?q=80&w=2000&auto=format&fit=crop', 
+    category: 'fries' 
+  },
+  { 
+    name: 'Craft Strawberry Shake', 
+    description: 'Hand-spun premium strawberry ice cream, topped with fresh berry coulis, whipped cream, and a maraschino cherry.', 
+    price: 6.99, 
+    image_url: 'https://images.unsplash.com/photo-1579954115545-a95591f28be0?q=80&w=2000&auto=format&fit=crop', 
+    category: 'drinks' 
+  },
+  { 
+    name: 'Sparkling Lemon & Mint', 
+    description: 'House-made sparkling lemonade infused with fresh garden mint and Sicilian lemon zest.', 
+    price: 4.49, 
+    image_url: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=2000&auto=format&fit=crop', 
+    category: 'drinks' 
+  },
+  { 
+    name: 'The Ultimate Combo', 
+    description: 'Any signature burger, a large side of loaded fries, and a premium craft shake of your choice.', 
+    price: 24.99, 
+    image_url: 'https://images.unsplash.com/photo-1521305916504-4a1121188589?q=80&w=2000&auto=format&fit=crop', 
+    category: 'combos' 
+  }
 ];
 
 async function seedDatabase() {

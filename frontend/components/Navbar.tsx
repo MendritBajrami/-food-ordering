@@ -61,6 +61,13 @@ export default function Navbar() {
                         <p className="text-sm font-bold text-gray-900 truncate">{user.name}</p>
                       </div>
                       
+                      {user.role === 'admin' && (
+                        <Link href="/admin" className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 bg-red-50/50 hover:bg-red-50 transition-colors group">
+                          <Utensils className="h-4 w-4 text-red-500" />
+                          <span className="font-bold">Admin Panel</span>
+                        </Link>
+                      )}
+                      
                       <Link href="/orders" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors group">
                         <Package className="h-4 w-4 text-gray-400 group-hover:text-red-500" />
                         <span>My Orders</span>
