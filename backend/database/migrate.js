@@ -63,7 +63,9 @@ async function createTables() {
     await client.query('COMMIT');
     console.log('All tables created successfully');
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('Migration error specifically:', error.message);
+    if (error.code) console.error('Error code:', error.code);
+    if (error.detail) console.error('Error detail:', error.detail);
     await client.query('ROLLBACK').catch(() => {});
     throw error;
   } finally {
