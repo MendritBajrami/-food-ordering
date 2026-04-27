@@ -22,15 +22,16 @@ const allowedOrigins = [
 
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: true, // Allow all origins
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
+    credentials: true,
   },
 });
 
 setIO(io);
 
 app.use(cors({
-  origin: allowedOrigins,
+  origin: true, // Allow all origins
   credentials: true,
 }));
 app.use(express.json());
