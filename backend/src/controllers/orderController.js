@@ -157,4 +157,23 @@ const getTodayStats = async (req, res) => {
   }
 };
 
-module.exports = { createOrder, getAllOrders, getOrderById, updateOrderStatus, getTodayStats, setIO };
+const getUserOrders = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const result = await db.query(`
+      SELECT o.*, 
+        json_agg(json_build_object('id', oi.id, 'product_id', oi.product_id, 'quantity', oi.quantity, 'price_at_purchase', oi.price_at_purchase)) as items
+      FROM orders o
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      WHERE o.user_id = $1
+      GROUP BY o.id
+      ORDER BY o.created_at DESC
+    `, [userId]);
+    res.json({ orders: result.rows });
+  } catch (error) {
+    console.error('Get user orders error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+module.exports = { createOrder, getAllOrders, getUserOrders, getOrderById, updateOrderStatus, getTodayStats, setIO };

@@ -54,6 +54,8 @@ export const api = {
       apiRequest<{ order: Order }>('/orders', { method: 'POST', body: JSON.stringify(data) }),
     getAll: () =>
       apiRequest<{ orders: Order[] }>('/orders'),
+    getMyOrders: () =>
+      apiRequest<{ orders: Order[] }>('/orders/my'),
     getById: (id: number) =>
       apiRequest<{ order: Order }>(`/orders/${id}`),
     updateStatus: (id: number, status: string) =>

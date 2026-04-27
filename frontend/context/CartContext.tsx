@@ -9,7 +9,7 @@ interface CartState {
 }
 
 type CartAction =
-  | { type: 'ADD_ITEM'; product: Product }
+  | { type: 'ADD_ITEM'; product: Product; quantity?: number }
   | { type: 'REMOVE_ITEM'; productId: number }
   | { type: 'UPDATE_QUANTITY'; productId: number; quantity: number }
   | { type: 'CLEAR_CART' }
@@ -24,20 +24,21 @@ const initialState: CartState = {
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case 'ADD_ITEM': {
+      const quantityToAdd = action.quantity ?? 1;
       const existingItem = state.items.find(item => item.product.id === action.product.id);
       if (existingItem) {
         return {
           ...state,
           items: state.items.map(item =>
             item.product.id === action.product.id
-              ? { ...item, quantity: item.quantity + 1 }
+              ? { ...item, quantity: item.quantity + quantityToAdd }
               : item
           ),
         };
       }
       return {
         ...state,
-        items: [...state.items, { product: action.product, quantity: 1 }],
+        items: [...state.items, { product: action.product, quantity: quantityToAdd }],
       };
     }
     case 'REMOVE_ITEM':
@@ -75,7 +76,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 interface CartContextType {
   items: CartItem[];
   isOpen: boolean;
-  addItem: (product: Product) => void;
+  addItem: (product: Product, quantity?: number) => void;
   removeItem: (productId: number) => void;
   updateQuantity: (productId: number, quantity: number) => void;
   clearCart: () => void;
@@ -107,7 +108,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state.items));
   }, [state.items]);
 
-  const addItem = (product: Product) => dispatch({ type: 'ADD_ITEM', product });
+  const addItem = (product: Product, quantity?: number) => dispatch({ type: 'ADD_ITEM', product, quantity });
   const removeItem = (productId: number) => dispatch({ type: 'REMOVE_ITEM', productId });
   const updateQuantity = (productId: number, quantity: number) =>
     dispatch({ type: 'UPDATE_QUANTITY', productId, quantity });

@@ -24,7 +24,7 @@ export default function LoginPage() {
       await login(formData.phone, formData.password);
       router.push('/menu');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Invalid credentials');
+      setError(err.message || 'Invalid credentials');
     } finally {
       setIsLoading(false);
     }

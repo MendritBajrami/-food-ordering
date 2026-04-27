@@ -29,7 +29,7 @@ export default function RegisterPage() {
       await register(formData.name, formData.phone, formData.password, formData.address);
       router.push('/menu');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Registration failed');
+      setError(err.message || 'Registration failed');
     } finally {
       setIsLoading(false);
     }
