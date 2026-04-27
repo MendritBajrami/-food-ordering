@@ -1,6 +1,16 @@
 import { Order, Product, User, CreateOrderData } from './types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+let BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+// Self-healing URL logic
+if (BASE_URL && !BASE_URL.startsWith('http')) {
+  BASE_URL = `https://${BASE_URL}`;
+}
+if (BASE_URL && !BASE_URL.endsWith('/api')) {
+  BASE_URL = `${BASE_URL.replace(/\/$/, '')}/api`;
+}
+
+const API_BASE_URL = BASE_URL;
 
 async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const stored = typeof window !== 'undefined' ? localStorage.getItem('food-ordering-auth') : null;
