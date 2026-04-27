@@ -48,7 +48,18 @@ async function createTables() {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    console.log('Created orders table');
+    
+    // Ensure user_id exists if table was already created
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='user_id') THEN
+          ALTER TABLE orders ADD COLUMN user_id INTEGER REFERENCES users(id);
+        END IF;
+      END
+      $$;
+    `);
+    console.log('Created/Updated orders table');
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS order_items (
