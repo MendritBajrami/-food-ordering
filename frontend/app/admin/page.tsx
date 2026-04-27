@@ -24,7 +24,7 @@ export default function AdminPage() {
   const loadOrders = useCallback(async () => {
     if (!token) return;
     try {
-      const data = await api.orders.getAll(token);
+      const data = await api.orders.getAll();
       setOrders(data.orders);
     } catch (error) {
       console.error('Failed to load orders:', error);
@@ -34,7 +34,7 @@ export default function AdminPage() {
   const loadStats = useCallback(async () => {
     if (!token) return;
     try {
-      const data = await api.orders.getStats(token);
+      const data = await api.orders.getStats();
       setStats(data.stats);
     } catch (error) {
       console.error('Failed to load stats:', error);
@@ -98,7 +98,7 @@ export default function AdminPage() {
   const handleUpdateStatus = async (orderId: number, status: string) => {
     if (!token) return;
     try {
-      await api.orders.updateStatus(orderId, status, token);
+      await api.orders.updateStatus(orderId, status);
       loadOrders();
       loadStats();
       setSelectedOrder(null);
