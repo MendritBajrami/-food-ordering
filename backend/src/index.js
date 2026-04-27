@@ -79,16 +79,28 @@ const PORT = process.env.PORT || 5000;
 const { createTables } = require('../database/migrate');
 
 async function startServer() {
-  try {
-    console.log('Starting server and running migrations...');
-    await createTables();
-    
-    server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error('FATAL: Failed to start server:', error);
-    process.exit(1);
+  const MAX_RETRIES = 5;
+  let retries = 0;
+
+  while (retries < MAX_RETRIES) {
+    try {
+      console.log(`Starting server and running migrations (Attempt ${retries + 1}/${MAX_RETRIES})...`);
+      await createTables();
+      
+      server.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+      });
+      return; // Success!
+    } catch (error) {
+      retries++;
+      console.error(`Attempt ${retries} failed:`, error.message);
+      if (retries >= MAX_RETRIES) {
+        console.error('FATAL: All connection attempts failed. Exiting.');
+        process.exit(1);
+      }
+      console.log('Retrying in 2 seconds...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
   }
 }
 
