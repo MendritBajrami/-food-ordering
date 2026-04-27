@@ -1,9 +1,10 @@
 const db = require('../src/config/database');
 
-const createTables = async () => {
+async function createTables() {
   const client = await db.getClient();
   
   try {
+    console.log('Creating tables...');
     await client.query('BEGIN');
 
     await client.query(`
@@ -17,6 +18,7 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    console.log('Created users table');
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS products (
@@ -30,6 +32,7 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    console.log('Created products table');
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS orders (
@@ -43,6 +46,7 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    console.log('Created orders table');
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS order_items (
@@ -53,18 +57,26 @@ const createTables = async () => {
         price_at_purchase DECIMAL(10,2) NOT NULL
       )
     `);
+    console.log('Created order_items table');
 
     await client.query('COMMIT');
     console.log('All tables created successfully');
   } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error creating tables:', error);
+    console.error('Error:', error.message);
+    await client.query('ROLLBACK').catch(() => {});
     throw error;
   } finally {
     client.release();
+    db.pool.end();
   }
-};
+}
 
 createTables()
-  .then(() => process.exit(0))
-  .catch(() => process.exit(1));
+  .then(() => {
+    console.log('Migration complete');
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error('Migration failed:', err.message);
+    process.exit(1);
+  });

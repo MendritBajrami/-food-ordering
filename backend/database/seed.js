@@ -19,34 +19,39 @@ const seedProducts = [
   { name: 'Kids Meal', description: 'Small burger, small fries, juice box', price: 8.99, image_url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400', category: 'combos' }
 ];
 
-const seedDatabase = async () => {
+async function seedDatabase() {
   try {
+    console.log('Clearing existing data...');
     await db.query('DELETE FROM order_items');
     await db.query('DELETE FROM orders');
     await db.query('DELETE FROM products');
     await db.query('DELETE FROM users');
 
+    console.log('Seeding products...');
     for (const product of seedProducts) {
       await db.query(
         'INSERT INTO products (name, description, price, image_url, category) VALUES ($1, $2, $3, $4, $5)',
         [product.name, product.description, product.price, product.image_url, product.category]
       );
     }
-    console.log('Products seeded successfully');
+    console.log('Products seeded: ' + seedProducts.length);
 
+    console.log('Creating admin user...');
     const adminPassword = await bcrypt.hash('admin123', 10);
     await db.query(
       'INSERT INTO users (name, phone, password_hash, address, role) VALUES ($1, $2, $3, $4, $5)',
       ['Admin', '1234567890', adminPassword, '123 Restaurant Street', 'admin']
     );
-    console.log('Admin user created');
+    console.log('Admin created');
 
-    console.log('Database seeded successfully');
+    console.log('Seed complete');
   } catch (error) {
-    console.error('Error seeding database:', error);
+    console.error('Seed error:', error.message);
     throw error;
+  } finally {
+    db.pool.end();
   }
-};
+}
 
 seedDatabase()
   .then(() => process.exit(0))
