@@ -69,6 +69,8 @@ export const api = {
       apiRequest<{ product: Product }>('/products', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: number, data: Partial<Product>) =>
       apiRequest<{ product: Product }>(`/products/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: number) =>
+      apiRequest<{ message: string }>(`/products/${id}`, { method: 'DELETE' }),
   },
   orders: {
     create: (data: CreateOrderData) =>

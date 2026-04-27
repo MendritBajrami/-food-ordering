@@ -78,4 +78,21 @@ const updateProduct = async (req, res) => {
   }
 };
 
-module.exports = { getAllProducts, getProductById, createProduct, updateProduct };
+const deleteProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await db.query(
+      'UPDATE products SET is_available = false WHERE id = $1 RETURNING *',
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    res.json({ message: 'Product deleted', product: result.rows[0] });
+  } catch (error) {
+    console.error('Delete product error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+module.exports = { getAllProducts, getProductById, createProduct, updateProduct, deleteProduct };

@@ -1,178 +1,193 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
+import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { Order } from '@/lib/types';
-import Badge from '@/components/ui/Badge';
-import Button from '@/components/ui/Button';
+import { LayoutDashboard, UtensilsCrossed, BarChart3, Wifi, WifiOff, Bell, LogOut } from 'lucide-react';
 import AdminLogin from './components/AdminLogin';
 import OrdersList from './components/OrdersList';
-import OrderDetails from './components/OrderDetails';
+import ProductsPanel from './components/ProductsPanel';
+import StatsPanel from './components/StatsPanel';
+
+type Tab = 'orders' | 'products' | 'stats';
 
 export default function AdminPage() {
-  const router = useRouter();
-  const { token, isLoading: authLoading } = useAuth();
+  const { user, token, logout, isLoading: authLoading } = useAuth();
+  const [tab, setTab] = useState<Tab>('orders');
   const [isConnected, setIsConnected] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState({ total_orders: 0, total_revenue: 0 });
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [notification, setNotification] = useState(false);
+  const [newOrderAlert, setNewOrderAlert] = useState(false);
+  const [newOrderCount, setNewOrderCount] = useState(0);
 
   const loadOrders = useCallback(async () => {
     if (!token) return;
-    try {
-      const data = await api.orders.getAll();
-      setOrders(data.orders);
-    } catch (error) {
-      console.error('Failed to load orders:', error);
-    }
+    try { const data = await api.orders.getAll(); setOrders(data.orders); } catch {}
   }, [token]);
 
   const loadStats = useCallback(async () => {
     if (!token) return;
-    try {
-      const data = await api.orders.getStats();
-      setStats(data.stats);
-    } catch (error) {
-      console.error('Failed to load stats:', error);
-    }
+    try { const data = await api.orders.getStats(); setStats(data.stats); } catch {}
   }, [token]);
 
   useEffect(() => {
-    if (!token && !authLoading) {
-      return;
-    }
+    if (!token || authLoading) return;
+    loadOrders();
+    loadStats();
 
-    if (token) {
-      loadOrders();
+    const SOCKET_URL = (() => {
+      let url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      url = url.replace(/\/api$/, '');
+      if (!url.startsWith('http')) url = `https://${url}`;
+      return url;
+    })();
+
+    const socket: Socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] });
+
+    socket.on('connect', () => {
+      setIsConnected(true);
+      socket.emit('join-admin', token);
+    });
+
+    socket.on('new-order', (data: { order: Order }) => {
+      setOrders(prev => [data.order, ...prev]);
+      setStats(prev => ({ ...prev, total_orders: prev.total_orders + 1 }));
+      setNewOrderAlert(true);
+      setNewOrderCount(c => c + 1);
+      setTimeout(() => setNewOrderAlert(false), 5000);
+      new Audio('/notification.mp3').play().catch(() => {});
+    });
+
+    socket.on('order-updated', ({ order_id, status }: { order_id: number; status: string }) => {
+      setOrders(prev => prev.map(o => o.id === order_id ? { ...o, status: status as Order['status'] } : o));
       loadStats();
+    });
 
-      const socket: Socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000', {
-        transports: ['websocket'],
-      });
-
-      socket.on('connect', () => {
-        setIsConnected(true);
-        socket.emit('join-admin', token);
-      });
-
-      socket.on('new-order', (data: { order: Order }) => {
-        setOrders(prev => [data.order, ...prev]);
-        setStats(prev => ({ ...prev, total_orders: prev.total_orders + 1 }));
-        setNotification(true);
-        setTimeout(() => setNotification(false), 3000);
-        
-        const audio = new Audio('/notification.mp3');
-        audio.play().catch(() => {});
-      });
-
-      socket.on('order-updated', (data: { order_id: number; status: string }) => {
-        setOrders(prev =>
-          prev.map(order =>
-            order.id === data.order_id
-              ? { ...order, status: data.status as Order['status'] }
-              : order
-          )
-        );
-        if (selectedOrder?.id === data.order_id) {
-          setSelectedOrder(prev =>
-            prev ? { ...prev, status: data.status as Order['status'] } : null
-          );
-        }
-        loadStats();
-      });
-
-      socket.on('disconnect', () => {
-        setIsConnected(false);
-      });
-
-      return () => {
-        socket.disconnect();
-      };
-    }
-  }, [token, authLoading, loadOrders, loadStats, selectedOrder?.id]);
+    socket.on('disconnect', () => setIsConnected(false));
+    return () => { socket.disconnect(); };
+  }, [token, authLoading, loadOrders, loadStats]);
 
   const handleUpdateStatus = async (orderId: number, status: string) => {
-    if (!token) return;
     try {
       await api.orders.updateStatus(orderId, status);
-      loadOrders();
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: status as Order['status'] } : o));
       loadStats();
-      setSelectedOrder(null);
-    } catch (error) {
-      console.error('Failed to update order:', error);
-    }
+    } catch (e) { console.error(e); }
   };
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-red-500 border-t-transparent" />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-10 w-10 border-4 border-red-500 border-t-transparent" />
       </div>
     );
   }
 
-  if (!token) {
-    return <AdminLogin />;
+  if (!token || !user) return <AdminLogin />;
+
+  // Role check — show a message if not admin
+  if (user.role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center p-8">
+          <p className="text-2xl font-black text-gray-900 mb-2">Access Denied</p>
+          <p className="text-gray-500 mb-6">You need an admin account to access this panel.</p>
+          <button onClick={logout} className="bg-red-500 text-white font-bold px-6 py-3 rounded-2xl hover:bg-red-600 transition-all">
+            Logout
+          </button>
+        </div>
+      </div>
+    );
   }
 
+  const tabs = [
+    { id: 'orders' as Tab, label: 'Orders', icon: LayoutDashboard, badge: newOrderCount > 0 ? newOrderCount : null },
+    { id: 'products' as Tab, label: 'Products', icon: UtensilsCrossed, badge: null },
+    { id: 'stats' as Tab, label: 'Stats', icon: BarChart3, badge: null },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
-          <div className="flex items-center gap-4">
-            <span className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-            <span className="text-sm text-gray-600">
-              {isConnected ? 'Live' : 'Disconnected'}
-            </span>
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Nav */}
+      <nav className="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-red-500 p-1.5 rounded-lg">
+              <UtensilsCrossed className="h-5 w-5 text-white" />
+            </div>
+            <span className="font-black text-gray-900">Admin Panel</span>
           </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              {isConnected ? <Wifi className="h-4 w-4 text-green-500" /> : <WifiOff className="h-4 w-4 text-red-400" />}
+              <span className="text-xs font-semibold text-gray-400 hidden sm:block">{isConnected ? 'Live' : 'Offline'}</span>
+            </div>
+            <span className="text-xs text-gray-400 hidden sm:block">{user.name}</span>
+            <button onClick={logout} className="p-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-400 hover:text-red-500">
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Bar */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-1 pb-0">
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => { setTab(t.id); if (t.id === 'orders') setNewOrderCount(0); }}
+              className={`relative flex items-center gap-2 px-4 py-3 text-sm font-bold transition-colors border-b-2 ${
+                tab === t.id ? 'border-red-500 text-red-600' : 'border-transparent text-gray-400 hover:text-gray-700'
+              }`}>
+              <t.icon className="h-4 w-4" />
+              {t.label}
+              {t.badge !== null && (
+                <span className="bg-red-500 text-white text-[10px] font-black h-4 min-w-4 px-1 rounded-full flex items-center justify-center">
+                  {t.badge}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
       </nav>
 
-      {notification && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-pulse">
-          New Order Received!
-        </div>
-      )}
+      {/* New Order Alert */}
+      <AnimatePresence>
+        {newOrderAlert && (
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-red-500 text-white px-6 py-3 rounded-2xl shadow-2xl shadow-red-500/40 flex items-center gap-3 font-bold">
+            <Bell className="h-5 w-5 animate-bounce" />
+            🎉 New Order Received!
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <p className="text-sm text-gray-600 mb-1">Today&apos;s Orders</p>
-            <p className="text-3xl font-bold text-gray-900">{stats.total_orders}</p>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <p className="text-sm text-gray-600 mb-1">Today&apos;s Revenue</p>
-            <p className="text-3xl font-bold text-green-500">
-              ${stats.total_revenue.toFixed(2)}
-            </p>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <p className="text-sm text-gray-600 mb-1">Pending Orders</p>
-            <p className="text-3xl font-bold text-yellow-500">
-              {orders.filter(o => o.status === 'pending' || o.status === 'preparing').length}
-            </p>
-          </div>
-        </div>
-
-        <OrdersList
-          orders={orders}
-          onSelectOrder={setSelectedOrder}
-          selectedOrder={selectedOrder}
-        />
+      {/* Page Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <AnimatePresence mode="wait">
+          {tab === 'orders' && (
+            <motion.div key="orders" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-black text-gray-900">All Orders</h2>
+                <span className="text-sm text-gray-400">{orders.length} total</span>
+              </div>
+              <OrdersList orders={orders} onUpdateStatus={handleUpdateStatus} />
+            </motion.div>
+          )}
+          {tab === 'products' && (
+            <motion.div key="products" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+              <h2 className="text-xl font-black text-gray-900 mb-4">Menu Products</h2>
+              <ProductsPanel />
+            </motion.div>
+          )}
+          {tab === 'stats' && (
+            <motion.div key="stats" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+              <h2 className="text-xl font-black text-gray-900 mb-4">Today's Stats</h2>
+              <StatsPanel stats={stats} orders={orders} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-
-      {selectedOrder && (
-        <OrderDetails
-          order={selectedOrder}
-          onClose={() => setSelectedOrder(null)}
-          onUpdateStatus={handleUpdateStatus}
-        />
-      )}
     </div>
   );
 }
