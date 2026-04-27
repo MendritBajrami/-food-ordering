@@ -47,6 +47,8 @@ export const api = {
       apiRequest<{ user: User; token: string }>('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
     getMe: () =>
       apiRequest<{ user: User }>('/auth/me'),
+    getHealth: () =>
+      apiRequest<{ status: string; timestamp: string }>('/health'),
   },
   products: {
     getAll: (category?: string) =>

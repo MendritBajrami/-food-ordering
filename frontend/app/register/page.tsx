@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { UserPlus, Phone, Lock, User, MapPin, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { api } from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 
@@ -102,8 +103,30 @@ export default function RegisterPage() {
             />
 
             {error && (
-              <div className="bg-red-50 text-red-500 text-sm p-3 rounded-lg border border-red-100">
-                {error}
+              <div className="bg-red-50 text-red-500 text-sm p-4 rounded-xl border border-red-100 flex flex-col gap-2">
+                <span className="font-bold flex items-center gap-2">
+                  <span className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                  Connection Error
+                </span>
+                <p className="opacity-80">{error}</p>
+                <div className="mt-2 pt-2 border-t border-red-100 flex flex-col gap-1">
+                  <p className="text-[10px] uppercase tracking-widest font-black opacity-50">Diagnostic Info:</p>
+                  <p className="text-[10px] break-all">API URL: {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}</p>
+                  <button 
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const data = await api.auth.getHealth();
+                        alert(`Backend is ONLINE! Status: ${data.status}`);
+                      } catch (e: any) {
+                        alert(`Backend CHECK FAILED: ${e.message}`);
+                      }
+                    }}
+                    className="text-[10px] text-left underline font-bold hover:text-red-700"
+                  >
+                    Run Connection Test
+                  </button>
+                </div>
               </div>
             )}
 
