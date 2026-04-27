@@ -1,10 +1,10 @@
 const express = require('express');
+const { authMiddleware, optionalAuth, adminOnly } = require('../middleware/auth');
 const { createOrder, getAllOrders, getOrderById, updateOrderStatus, getTodayStats } = require('../controllers/orderController');
-const { authMiddleware, adminOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.post('/', createOrder);
+router.post('/', optionalAuth, createOrder);
 router.get('/', authMiddleware, adminOnly, getAllOrders);
 router.get('/stats', authMiddleware, adminOnly, getTodayStats);
 router.get('/:id', authMiddleware, adminOnly, getOrderById);

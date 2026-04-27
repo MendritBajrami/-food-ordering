@@ -36,9 +36,10 @@ const createOrder = async (req, res) => {
       });
     }
 
+    const userId = req.user ? req.user.id : null;
     const orderResult = await client.query(
-      'INSERT INTO orders (customer_name, phone, address, delivery_type, total_price) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [customer_name, phone, address, delivery_type, totalPrice]
+      'INSERT INTO orders (user_id, customer_name, phone, address, delivery_type, total_price) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [userId, customer_name, phone, address, delivery_type, totalPrice]
     );
 
     const order = orderResult.rows[0];

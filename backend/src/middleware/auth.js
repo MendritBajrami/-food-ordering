@@ -29,11 +29,25 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-const adminOnly = (req, res, next) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Admin access required' });
+const optionalAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return next();
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    const result = await db.query('SELECT id, name, phone, address, role FROM users WHERE id = $1', [decoded.userId]);
+    
+    if (result.rows.length > 0) {
+      req.user = result.rows[0];
+    }
+    next();
+  } catch (error) {
+    next();
   }
-  next();
 };
 
-module.exports = { authMiddleware, adminOnly, JWT_SECRET };
+module.exports = { authMiddleware, optionalAuth, adminOnly, JWT_SECRET };

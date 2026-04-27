@@ -1,15 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Check, MapPin, Clock } from 'lucide-react';
+import { Check, MapPin, Clock, User as UserIcon } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, totalPrice, clearCart } = useCart();
+  const { user } = useAuth();
   
   const [formData, setFormData] = useState({
     customer_name: '',
@@ -19,6 +22,18 @@ export default function CheckoutPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Autofill if logged in
+  React.useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        customer_name: user.name,
+        phone: user.phone,
+        address: user.address || '',
+      }));
+    }
+  }, [user]);
 
   const deliveryFee = formData.delivery_type === 'delivery' ? 2.99 : 0;
   const grandTotal = totalPrice + deliveryFee;
@@ -213,8 +228,18 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                {errors.submit && (
-                  <p className="text-sm text-red-500">{errors.submit}</p>
+                {!user && (
+                  <div className="bg-gray-50 border border-gray-100 rounded-lg p-4 flex items-start gap-3">
+                    <div className="bg-white p-2 rounded-md border border-gray-100">
+                      <UserIcon className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Save your details for next time?</p>
+                      <Link href="/register" className="text-xs text-red-500 hover:text-red-600 font-semibold">
+                        Create an account to track orders and checkout faster
+                      </Link>
+                    </div>
+                  </div>
                 )}
 
                 <button

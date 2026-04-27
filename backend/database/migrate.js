@@ -38,6 +38,7 @@ async function createTables() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS orders (
         id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
         customer_name VARCHAR(255) NOT NULL,
         phone VARCHAR(20) NOT NULL,
         address TEXT,
