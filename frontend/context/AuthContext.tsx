@@ -26,9 +26,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem(AUTH_STORAGE_KEY);
     if (stored) {
       try {
-        const { user, token } = JSON.parse(stored);
-        setUser(user);
+        const { token } = JSON.parse(stored);
         setToken(token);
+        // Always re-fetch user from backend so role changes are reflected immediately
+        api.auth.getMe()
+          .then(data => {
+            setUser(data.user);
+            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ user: data.user, token }));
+          })
+          .catch(() => {
+            // Token expired or backend down — clear auth
+            localStorage.removeItem(AUTH_STORAGE_KEY);
+            setToken(null);
+          })
+          .finally(() => setIsLoading(false));
+        return;
       } catch (e) {
         console.error('Failed to load auth from storage');
       }
