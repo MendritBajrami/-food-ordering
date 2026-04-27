@@ -47,7 +47,7 @@ export default function CartPage() {
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-gray-900">{item.product.name}</h3>
                   <p className="text-red-500 font-semibold">
-                    ${item.product.price.toFixed(2)}
+                    ${Number(item.product.price).toFixed(2)}
                   </p>
                   <div className="flex items-center gap-3 mt-2">
                     <button
@@ -73,7 +73,7 @@ export default function CartPage() {
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-gray-900">
-                    ${(item.product.price * item.quantity).toFixed(2)}
+                    ${(Number(item.product.price) * item.quantity).toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -85,7 +85,7 @@ export default function CartPage() {
           <div className="flex justify-between items-center mb-6">
             <span className="text-lg text-gray-600">Total</span>
             <span className="text-2xl font-bold text-gray-900">
-              ${totalPrice.toFixed(2)}
+              ${Number(totalPrice).toFixed(2)}
             </span>
           </div>
           <Link
