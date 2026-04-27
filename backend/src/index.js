@@ -4,11 +4,11 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 
-const authRoutes = require('./src/routes/auth');
-const productRoutes = require('./src/routes/products');
-const orderRoutes = require('./src/routes/orders');
-const { setIO } = require('./src/controllers/orderController');
-const { JWT_SECRET } = require('./src/middleware/auth');
+const authRoutes = require('./routes/auth');
+const productRoutes = require('./routes/products');
+const orderRoutes = require('./routes/orders');
+const { setIO } = require('./controllers/orderController');
+const { JWT_SECRET } = require('./middleware/auth');
 const jwt = require('jsonwebtoken');
 
 const app = express();
@@ -49,7 +49,7 @@ io.on('connection', (socket) => {
   socket.on('join-admin', async (token) => {
     try {
       const decoded = jwt.verify(token, JWT_SECRET);
-      const db = require('./src/config/database');
+      const db = require('./config/database');
       const result = await db.query('SELECT role FROM users WHERE id = $1', [decoded.userId]);
       
       if (result.rows.length > 0 && result.rows[0].role === 'admin') {
