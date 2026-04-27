@@ -43,6 +43,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// 404 Handler
+app.use((req, res) => {
+  res.status(404).json({ error: `Not Found - ${req.originalUrl}` });
+});
+
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 

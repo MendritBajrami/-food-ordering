@@ -21,10 +21,19 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
     ...options,
     headers,
   });
-  const data = await response.json();
+
+  const contentType = response.headers.get('content-type');
+  let data: any;
+
+  if (contentType && contentType.includes('application/json')) {
+    data = await response.json();
+  } else {
+    const text = await response.text();
+    throw new Error(`Server returned non-JSON response (${response.status}). The backend might be down or misconfigured.`);
+  }
 
   if (!response.ok) {
-    throw new Error(data.error || 'Request failed');
+    throw new Error(data?.error || `Request failed with status ${response.status}`);
   }
 
   return data as T;
