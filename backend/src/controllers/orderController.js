@@ -9,7 +9,7 @@ const setIO = (socketIO) => {
 const createOrder = async (req, res) => {
   let client;
   try {
-    const { customer_name, phone, address, delivery_type, items } = req.body;
+    const { customer_name, phone, address, delivery_type, payment_method, items } = req.body;
 
     if (!customer_name || !phone || !delivery_type || !items || items.length === 0) {
       return res.status(400).json({ error: 'Customer name, phone, delivery type, and items are required' });
@@ -39,8 +39,8 @@ const createOrder = async (req, res) => {
 
     const userId = req.user ? req.user.id : null;
     const orderResult = await client.query(
-      'INSERT INTO orders (user_id, customer_name, phone, address, delivery_type, total_price) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [userId, customer_name, phone, address, delivery_type, totalPrice]
+      'INSERT INTO orders (user_id, customer_name, phone, address, delivery_type, payment_method, total_price) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [userId, customer_name, phone, address, delivery_type, payment_method || 'cash', totalPrice]
     );
 
     const order = orderResult.rows[0];

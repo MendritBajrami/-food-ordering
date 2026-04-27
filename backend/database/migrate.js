@@ -43,18 +43,22 @@ async function createTables() {
         phone VARCHAR(20) NOT NULL,
         address TEXT,
         delivery_type VARCHAR(20) NOT NULL,
+        payment_method VARCHAR(20) DEFAULT 'cash',
         status VARCHAR(20) DEFAULT 'pending',
         total_price DECIMAL(10,2) NOT NULL,
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
     
-    // Ensure user_id exists if table was already created
+    // Ensure user_id and payment_method exist if table was already created
     await client.query(`
       DO $$
       BEGIN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='user_id') THEN
           ALTER TABLE orders ADD COLUMN user_id INTEGER REFERENCES users(id);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='payment_method') THEN
+          ALTER TABLE orders ADD COLUMN payment_method VARCHAR(20) DEFAULT 'cash';
         END IF;
       END
       $$;
