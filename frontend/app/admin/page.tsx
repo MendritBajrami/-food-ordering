@@ -59,7 +59,7 @@ export default function AdminPage() {
       setNewOrderAlert(true);
       setNewOrderCount(c => c + 1);
       setTimeout(() => setNewOrderAlert(false), 5000);
-      new Audio('/notification.mp3').play().catch(() => {});
+      // Notification sound or alert could go here
     });
 
     socket.on('order-updated', ({ order_id, status }: { order_id: number; status: string }) => {

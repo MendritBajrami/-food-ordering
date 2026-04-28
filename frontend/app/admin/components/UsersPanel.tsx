@@ -226,7 +226,7 @@ export default function UsersPanel() {
                       <button
                         key={r}
                         type="button"
-                        onClick={() => setNewUser({...newUser, role: r as any})}
+                        onClick={() => setNewUser({...newUser, role: r as 'customer' | 'admin'})}
                         className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
                           newUser.role === r ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
                         }`}

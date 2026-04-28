@@ -173,7 +173,7 @@ export default function OrdersList({ orders, onUpdateStatus }: Props) {
                               {(order.items || []).map((item: OrderItem, i: number) => (
                                 <div key={i} className="flex justify-between text-sm">
                                   <span className="text-gray-600">× {item.quantity} Product #{item.product_id}</span>
-                                  <span className="font-semibold">${(item.price_at_purchase * item.quantity).toFixed(2)}</span>
+                                  <span className="font-semibold">${(Number(item.price_at_purchase) * item.quantity).toFixed(2)}</span>
                                 </div>
                               ))}
                             </div>
