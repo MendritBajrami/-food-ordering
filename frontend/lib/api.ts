@@ -59,6 +59,8 @@ export const api = {
       apiRequest<{ user: User }>('/auth/me'),
     getHealth: () =>
       apiRequest<{ status: string; timestamp: string }>('/health'),
+    deleteAccount: (password: string) =>
+      apiRequest<{ message: string }>('/auth/profile', { method: 'DELETE', body: JSON.stringify({ password }) }),
   },
   products: {
     getAll: (category?: string) =>

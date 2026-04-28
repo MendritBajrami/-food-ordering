@@ -99,4 +99,32 @@ const updateProfile = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getMe, updateProfile };
+const deleteAccount = async (req, res) => {
+  try {
+    const { password } = req.body;
+    const userId = req.user.id;
+
+    if (!password) {
+      return res.status(400).json({ error: 'Password is required to delete your account' });
+    }
+
+    const result = await db.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const valid = await bcrypt.compare(password, result.rows[0].password_hash);
+    if (!valid) {
+      return res.status(400).json({ error: 'Incorrect password' });
+    }
+
+    await db.query('DELETE FROM users WHERE id = $1', [userId]);
+    
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+module.exports = { register, login, getMe, updateProfile, deleteAccount };

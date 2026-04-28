@@ -38,7 +38,7 @@ async function createTables() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS orders (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id),
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
         customer_name VARCHAR(255) NOT NULL,
         phone VARCHAR(20) NOT NULL,
         address TEXT,
@@ -62,6 +62,14 @@ async function createTables() {
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='rejection_reason') THEN
           ALTER TABLE orders ADD COLUMN rejection_reason TEXT;
+        END IF;
+        
+        -- Add ON DELETE CASCADE to user_id in orders if it's not already there
+        -- This is a bit complex in pure SQL without knowing the constraint name, but we can try to drop and add.
+        -- Using a simpler approach: check for foreign key and recreate it
+        IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name='orders_user_id_fkey') THEN
+          ALTER TABLE orders DROP CONSTRAINT orders_user_id_fkey;
+          ALTER TABLE orders ADD CONSTRAINT orders_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
         END IF;
       END
       $$;

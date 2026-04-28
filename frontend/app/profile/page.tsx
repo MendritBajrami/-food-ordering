@@ -31,6 +31,10 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [showDeletePanel, setShowDeletePanel] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   React.useEffect(() => {
     if (!user) router.push('/login');
@@ -287,6 +291,70 @@ export default function ProfilePage() {
           <LogOut className="h-5 w-5" />
           Logout
         </motion.button>
+
+        {/* Danger Zone: Delete Account */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+          className="bg-red-50/30 rounded-3xl border border-red-100/50 overflow-hidden">
+          <button
+            onClick={() => { setShowDeletePanel(!showDeletePanel); setDeleteError(''); }}
+            className="w-full flex items-center justify-between px-6 py-4 hover:bg-red-50/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <X className="h-5 w-5 text-red-400" />
+              <span className="text-sm font-black uppercase tracking-widest text-red-400">Danger Zone</span>
+            </div>
+            <span className="text-[10px] font-bold text-red-300">Delete Account</span>
+          </button>
+
+          <AnimatePresence>
+            {showDeletePanel && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                className="px-6 pb-6 pt-2 border-t border-red-100/30 space-y-4">
+                <p className="text-xs text-red-500/70 font-medium leading-relaxed">
+                  Deleting your account is permanent. All your order history and personal data will be removed.
+                </p>
+                <div className="space-y-4">
+                  <Input label="Enter Password to Confirm" name="deletePassword" type="password" 
+                    icon={<Lock className="h-5 w-5" />} value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)} required />
+                  
+                  {deleteError && (
+                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-red-500 text-xs font-bold bg-red-50 p-3 rounded-xl border border-red-100">
+                      ⚠ {deleteError}
+                    </motion.p>
+                  )}
+
+                  <button
+                    onClick={async () => {
+                      if (!deletePassword) return;
+                      setIsDeleting(true);
+                      setDeleteError('');
+                      try {
+                        const res = await fetch(`${API_URL}/auth/profile`, {
+                          method: 'DELETE',
+                          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                          body: JSON.stringify({ password: deletePassword }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'Deletion failed');
+                        logout();
+                        router.push('/');
+                      } catch (err: any) {
+                        setDeleteError(err.message);
+                      } finally {
+                        setIsDeleting(false);
+                      }
+                    }}
+                    disabled={isDeleting || !deletePassword}
+                    className="w-full bg-red-500 hover:bg-red-600 text-white font-black py-3.5 rounded-2xl transition-all shadow-lg shadow-red-200 active:scale-95 disabled:opacity-50"
+                  >
+                    {isDeleting ? 'Deleting...' : 'Permanently Delete Account'}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
       </div>
     </div>
