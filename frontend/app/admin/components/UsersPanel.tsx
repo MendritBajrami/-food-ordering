@@ -32,10 +32,12 @@ export default function UsersPanel() {
   const loadUsers = async () => {
     try {
       setIsLoading(true);
+      setError('');
       const data = await api.users.getAll();
-      setUsers(data.users);
-    } catch (err) {
+      setUsers(data.users || []);
+    } catch (err: unknown) {
       console.error('Failed to load users:', err);
+      setError(err instanceof Error ? err.message : 'Failed to connect to the server. Please check your internet or verify if you are logged in as admin.');
     } finally {
       setIsLoading(false);
     }
@@ -126,6 +128,14 @@ export default function UsersPanel() {
                     <td colSpan={5} className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-full" /></td>
                   </tr>
                 ))
+              ) : error ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center">
+                    <p className="text-red-500 font-bold mb-2">Error Loading Users</p>
+                    <p className="text-gray-400 text-sm italic">{error}</p>
+                    <Button variant="outline" size="sm" onClick={loadUsers} className="mt-4">Try Again</Button>
+                  </td>
+                </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-gray-400 font-medium">

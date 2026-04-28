@@ -19,7 +19,18 @@ async function createTables() {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    console.log('Created users table');
+    
+    // Ensure role column exists if table was created earlier
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='role') THEN
+          ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'customer';
+        END IF;
+      END
+      $$;
+    `);
+    console.log('Created/Updated users table');
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS products (
