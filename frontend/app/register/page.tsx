@@ -29,8 +29,8 @@ export default function RegisterPage() {
     try {
       await register(formData.name, formData.phone, formData.password, formData.address);
       router.push('/menu');
-    } catch (err: any) {
-      setError(err.message || 'Registration failed');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
       setIsLoading(false);
     }
@@ -118,8 +118,8 @@ export default function RegisterPage() {
                       try {
                         const data = await api.auth.getHealth();
                         alert(`Backend is ONLINE! Status: ${data.status}`);
-                      } catch (e: any) {
-                        alert(`Backend CHECK FAILED: ${e.message}`);
+                      } catch (e: unknown) {
+                        alert(`Backend CHECK FAILED: ${e instanceof Error ? e.message : 'Unknown error'}`);
                       }
                     }}
                     className="text-[10px] text-left underline font-bold hover:text-red-700"

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { User } from '@/lib/types';
-import { UserPlus, Trash2, Shield, ShieldAlert, Search, X, Save, Phone, MapPin, User as UserIcon, Key } from 'lucide-react';
+import { UserPlus, Trash2, Shield, ShieldAlert, Search, X, Save, Phone, MapPin, User as UserIcon, KeyRound } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 
@@ -216,7 +216,7 @@ export default function UsersPanel() {
                   <Input label="Name" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} icon={<UserIcon className="h-5 w-5" />} required />
                   <Input label="Phone" value={newUser.phone} onChange={e => setNewUser({...newUser, phone: e.target.value})} icon={<Phone className="h-5 w-5" />} required />
                 </div>
-                <Input label="Password" type="password" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} icon={<Key className="h-5 w-5" />} required />
+                <Input label="Password" type="password" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} icon={<KeyRound className="h-5 w-5" />} required />
                 <Input label="Address" value={newUser.address} onChange={e => setNewUser({...newUser, address: e.target.value})} icon={<MapPin className="h-5 w-5" />} />
                 
                 <div className="space-y-2">

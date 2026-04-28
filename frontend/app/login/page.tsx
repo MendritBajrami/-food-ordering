@@ -23,8 +23,8 @@ export default function LoginPage() {
     try {
       await login(formData.phone, formData.password);
       router.push('/menu');
-    } catch (err: any) {
-      setError(err.message || 'Invalid credentials');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Invalid credentials');
     } finally {
       setIsLoading(false);
     }

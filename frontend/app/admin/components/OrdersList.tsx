@@ -10,7 +10,7 @@ interface Props {
   onUpdateStatus: (id: number, status: string, reason?: string) => void;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string; icon: any }> = {
+const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string; icon: React.ElementType }> = {
   pending:   { label: 'Pending',   color: 'bg-yellow-100 text-yellow-800', dot: 'bg-yellow-400', icon: Clock },
   preparing: { label: 'Preparing', color: 'bg-blue-100 text-blue-800',   dot: 'bg-blue-400',   icon: ChefHat },
   ready:     { label: 'Ready',     color: 'bg-purple-100 text-purple-800', dot: 'bg-purple-400', icon: CheckCircle },
@@ -170,7 +170,7 @@ export default function OrdersList({ orders, onUpdateStatus }: Props) {
                           <div>
                             <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Items Ordered</p>
                             <div className="space-y-1">
-                              {(order.items || []).map((item: any, i: number) => (
+                              {(order.items || []).map((item, i) => (
                                 <div key={i} className="flex justify-between text-sm">
                                   <span className="text-gray-600">× {item.quantity} Product #{item.product_id}</span>
                                   <span className="font-semibold">${(item.price_at_purchase * item.quantity).toFixed(2)}</span>

@@ -33,7 +33,7 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
   });
 
   const contentType = response.headers.get('content-type');
-  let data: any;
+  let data: unknown;
 
   if (contentType && contentType.includes('application/json')) {
     data = await response.json();
@@ -43,7 +43,8 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
   }
 
   if (!response.ok) {
-    throw new Error(data?.error || `Request failed with status ${response.status}`);
+    const errorData = data as { error?: string };
+    throw new Error(errorData?.error || `Request failed with status ${response.status}`);
   }
 
   return data as T;
@@ -91,9 +92,9 @@ export const api = {
   users: {
     getAll: () =>
       apiRequest<{ users: User[] }>('/auth/users'),
-    create: (data: any) =>
+    create: (data: Partial<User> & { password?: string }) =>
       apiRequest<{ user: User }>('/auth/users', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: number, data: any) =>
+    update: (id: number, data: Partial<User>) =>
       apiRequest<{ user: User }>(`/auth/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     delete: (id: number) =>
       apiRequest<{ message: string }>(`/auth/users/${id}`, { method: 'DELETE' }),
