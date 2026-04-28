@@ -34,7 +34,15 @@ export default function MenuPage() {
     let filtered = products;
 
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(p => p.category?.toLowerCase() === selectedCategory.toLowerCase());
+      filtered = filtered.filter(p => {
+        const pCat = p.category?.toLowerCase() || '';
+        const sCat = selectedCategory.toLowerCase();
+        // Match exact, singular/plural, or "beverages" for drinks
+        return pCat === sCat || 
+               pCat === sCat.replace(/s$/, '') || 
+               sCat === pCat.replace(/s$/, '') ||
+               (sCat === 'drinks' && pCat === 'beverages');
+      });
     }
 
     if (searchQuery) {
