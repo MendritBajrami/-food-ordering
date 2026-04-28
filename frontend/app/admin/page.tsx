@@ -6,13 +6,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { Order } from '@/lib/types';
-import { LayoutDashboard, UtensilsCrossed, BarChart3, Wifi, WifiOff, Bell, LogOut } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, BarChart3, Users, Wifi, WifiOff, Bell, LogOut } from 'lucide-react';
 import AdminLogin from './components/AdminLogin';
 import OrdersList from './components/OrdersList';
 import ProductsPanel from './components/ProductsPanel';
 import StatsPanel from './components/StatsPanel';
+import UsersPanel from './components/UsersPanel';
 
-type Tab = 'orders' | 'products' | 'stats';
+type Tab = 'orders' | 'products' | 'stats' | 'users';
 
 export default function AdminPage() {
   const { user, token, logout, isLoading: authLoading } = useAuth();
@@ -107,6 +108,7 @@ export default function AdminPage() {
     { id: 'orders' as Tab, label: 'Orders', icon: LayoutDashboard, badge: newOrderCount > 0 ? newOrderCount : null },
     { id: 'products' as Tab, label: 'Products', icon: UtensilsCrossed, badge: null },
     { id: 'stats' as Tab, label: 'Stats', icon: BarChart3, badge: null },
+    { id: 'users' as Tab, label: 'Users', icon: Users, badge: null },
   ];
 
   return (
@@ -184,6 +186,12 @@ export default function AdminPage() {
             <motion.div key="stats" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
               <h2 className="text-xl font-black text-gray-900 mb-4">Today's Stats</h2>
               <StatsPanel stats={stats} orders={orders} />
+            </motion.div>
+          )}
+          {tab === 'users' && (
+            <motion.div key="users" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+              <h2 className="text-xl font-black text-gray-900 mb-4">User Management</h2>
+              <UsersPanel />
             </motion.div>
           )}
         </AnimatePresence>

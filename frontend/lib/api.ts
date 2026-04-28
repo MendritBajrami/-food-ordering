@@ -88,6 +88,16 @@ export const api = {
     getStats: () =>
       apiRequest<{ stats: { total_orders: number; total_revenue: number } }>('/orders/stats'),
   },
+  users: {
+    getAll: () =>
+      apiRequest<{ users: User[] }>('/auth/users'),
+    create: (data: any) =>
+      apiRequest<{ user: User }>('/auth/users', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: number, data: any) =>
+      apiRequest<{ user: User }>(`/auth/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: number) =>
+      apiRequest<{ message: string }>(`/auth/users/${id}`, { method: 'DELETE' }),
+  },
 };
 
 export default api;
