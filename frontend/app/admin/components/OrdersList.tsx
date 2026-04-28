@@ -2,15 +2,15 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Order } from '@/lib/types';
-import { Clock, ChefHat, CheckCircle, Truck, ChevronDown, Phone, MapPin, Package } from 'lucide-react';
+import { Clock, ChefHat, CheckCircle, Truck, ChevronDown, Phone, MapPin, Package, LucideIcon } from 'lucide-react';
+import { Order, OrderItem } from '@/lib/types';
 
 interface Props {
   orders: Order[];
   onUpdateStatus: (id: number, status: string, reason?: string) => void;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string; icon: React.ElementType }> = {
+const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string; icon: LucideIcon }> = {
   pending:   { label: 'Pending',   color: 'bg-yellow-100 text-yellow-800', dot: 'bg-yellow-400', icon: Clock },
   preparing: { label: 'Preparing', color: 'bg-blue-100 text-blue-800',   dot: 'bg-blue-400',   icon: ChefHat },
   ready:     { label: 'Ready',     color: 'bg-purple-100 text-purple-800', dot: 'bg-purple-400', icon: CheckCircle },
@@ -170,7 +170,7 @@ export default function OrdersList({ orders, onUpdateStatus }: Props) {
                           <div>
                             <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Items Ordered</p>
                             <div className="space-y-1">
-                              {(order.items || []).map((item, i) => (
+                              {(order.items || []).map((item: OrderItem, i: number) => (
                                 <div key={i} className="flex justify-between text-sm">
                                   <span className="text-gray-600">× {item.quantity} Product #{item.product_id}</span>
                                   <span className="font-semibold">${(item.price_at_purchase * item.quantity).toFixed(2)}</span>

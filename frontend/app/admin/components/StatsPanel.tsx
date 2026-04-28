@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingBag, DollarSign, Clock, CheckCircle, ChefHat, TrendingUp } from 'lucide-react';
+import { ShoppingBag, DollarSign, CheckCircle, ChefHat, TrendingUp } from 'lucide-react';
 import { Order } from '@/lib/types';
 
 interface Props {
