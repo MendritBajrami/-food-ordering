@@ -50,8 +50,8 @@ export default function UsersPanel() {
       await loadUsers();
       setShowAddModal(false);
       setNewUser({ name: '', phone: '', password: '', address: '', role: 'customer' });
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create user');
     } finally {
       setIsSubmitting(false);
     }
@@ -62,8 +62,8 @@ export default function UsersPanel() {
     try {
       await api.users.delete(id);
       setUsers(prev => prev.filter(u => u.id !== id));
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Delete failed');
     }
   };
 
@@ -72,8 +72,8 @@ export default function UsersPanel() {
     try {
       await api.users.update(user.id, { role: newRole });
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: newRole } : u));
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Update failed');
     }
   };
 

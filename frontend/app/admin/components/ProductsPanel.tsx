@@ -58,7 +58,9 @@ export default function ProductsPanel() {
       }
       await loadProducts();
       closeModal();
-    } catch (err: any) { setFormError(err.message || 'Save failed'); }
+    } catch (err: unknown) { 
+      setFormError(err instanceof Error ? err.message : 'Save failed'); 
+    }
     finally { setIsSaving(false); }
   };
 
