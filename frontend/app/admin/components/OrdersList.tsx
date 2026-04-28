@@ -7,14 +7,15 @@ import { Clock, ChefHat, CheckCircle, Truck, ChevronDown, Phone, MapPin, Package
 
 interface Props {
   orders: Order[];
-  onUpdateStatus: (id: number, status: string) => void;
+  onUpdateStatus: (id: number, status: string, reason?: string) => void;
 }
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string; icon: any }> = {
   pending:   { label: 'Pending',   color: 'bg-yellow-100 text-yellow-800', dot: 'bg-yellow-400', icon: Clock },
   preparing: { label: 'Preparing', color: 'bg-blue-100 text-blue-800',   dot: 'bg-blue-400',   icon: ChefHat },
   ready:     { label: 'Ready',     color: 'bg-purple-100 text-purple-800', dot: 'bg-purple-400', icon: CheckCircle },
   delivered: { label: 'Delivered', color: 'bg-green-100 text-green-800',  dot: 'bg-green-400',  icon: Truck },
+  rejected:  { label: 'Rejected',  color: 'bg-red-100 text-red-800',     dot: 'bg-red-400',    icon: CheckCircle },
 };
 
 const NEXT_STATUS: Record<string, string | null> = {
@@ -22,6 +23,7 @@ const NEXT_STATUS: Record<string, string | null> = {
   preparing: 'ready',
   ready: 'delivered',
   delivered: null,
+  rejected: null,
 };
 
 const NEXT_LABEL: Record<string, string> = {
@@ -30,11 +32,13 @@ const NEXT_LABEL: Record<string, string> = {
   ready: '→ Mark Delivered',
 };
 
-const FILTERS = ['all', 'pending', 'preparing', 'ready', 'delivered'] as const;
+const FILTERS = ['all', 'pending', 'preparing', 'ready', 'delivered', 'rejected'] as const;
 
 export default function OrdersList({ orders, onUpdateStatus }: Props) {
   const [filter, setFilter] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [rejectId, setRejectId] = useState<number | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
 
   const filtered = filter === 'all' ? orders : orders.filter(o => o.status === filter);
 
@@ -94,7 +98,7 @@ export default function OrdersList({ orders, onUpdateStatus }: Props) {
                       <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
                         <span>{formatDate(order.created_at)} {formatTime(order.created_at)}</span>
                         <span className="font-bold text-gray-700">${Number(order.total_price).toFixed(2)}</span>
-                        <span>{order.delivery_type}</span>
+                        <span className="uppercase tracking-tighter opacity-60">{order.delivery_type}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -102,6 +106,12 @@ export default function OrdersList({ orders, onUpdateStatus }: Props) {
                         <button onClick={() => onUpdateStatus(order.id, nextStatus)}
                           className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all hover:shadow-md active:scale-95 whitespace-nowrap">
                           {NEXT_LABEL[order.status]}
+                        </button>
+                      )}
+                      {order.status === 'pending' && (
+                        <button onClick={() => setRejectId(order.id)}
+                          className="bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-500 text-[10px] font-bold px-2 py-2 rounded-xl transition-all">
+                          Reject
                         </button>
                       )}
                       <button onClick={() => setExpandedId(isExpanded ? null : order.id)}
@@ -113,13 +123,33 @@ export default function OrdersList({ orders, onUpdateStatus }: Props) {
                     </div>
                   </div>
 
+                  {/* Reject Reason Input (Simplified inline) */}
+                  <AnimatePresence>
+                    {rejectId === order.id && (
+                      <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
+                        className="bg-red-50 px-4 py-3 border-t border-red-100">
+                        <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-2">Rejection Reason</p>
+                        <div className="flex gap-2">
+                          <input type="text" placeholder="e.g. Out of stock, busy..." autoFocus
+                            value={rejectReason} onChange={e => setRejectReason(e.target.value)}
+                            className="flex-1 bg-white border border-red-200 rounded-xl px-3 py-1.5 text-xs text-gray-900 focus:ring-2 focus:ring-red-500 outline-none transition-all" />
+                          <button onClick={() => { onUpdateStatus(order.id, 'rejected', rejectReason); setRejectId(null); setRejectReason(''); }}
+                            className="bg-red-500 text-white text-[10px] font-bold px-3 rounded-lg hover:bg-red-600">
+                            Confirm Rejection
+                          </button>
+                          <button onClick={() => setRejectId(null)} className="text-[10px] font-bold text-gray-400 hover:text-gray-600 px-2">Cancel</button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
                   {/* Expanded details */}
                   <AnimatePresence>
                     {isExpanded && (
                       <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
                         className="overflow-hidden border-t border-gray-50">
                         <div className="p-4 grid sm:grid-cols-2 gap-4">
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             <div className="flex items-center gap-2 text-sm">
                               <Phone className="h-4 w-4 text-gray-300" />
                               <span className="text-gray-600">{order.phone}</span>
@@ -128,6 +158,12 @@ export default function OrdersList({ orders, onUpdateStatus }: Props) {
                               <div className="flex items-start gap-2 text-sm">
                                 <MapPin className="h-4 w-4 text-gray-300 mt-0.5" />
                                 <span className="text-gray-600">{order.address}</span>
+                              </div>
+                            )}
+                            {order.rejection_reason && (
+                              <div className="bg-red-50 p-2 rounded-xl border border-red-100">
+                                <p className="text-[10px] font-black text-red-500 uppercase mb-1">Rejection Reason</p>
+                                <p className="text-xs text-red-700 italic">"{order.rejection_reason}"</p>
                               </div>
                             )}
                           </div>
@@ -149,7 +185,7 @@ export default function OrdersList({ orders, onUpdateStatus }: Props) {
                         </div>
                         {/* All status buttons */}
                         <div className="px-4 pb-4 flex gap-2 flex-wrap">
-                          {(['pending','preparing','ready','delivered'] as const).map(s => (
+                          {(['pending','preparing','ready','delivered', 'rejected'] as const).map(s => (
                             <button key={s} onClick={() => onUpdateStatus(order.id, s)}
                               className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all ${
                                 order.status === s ? `${STATUS_CONFIG[s].color} ring-2 ring-offset-1 ring-current` : 'bg-gray-100 text-gray-500 hover:bg-gray-200'

@@ -60,6 +60,9 @@ async function createTables() {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='payment_method') THEN
           ALTER TABLE orders ADD COLUMN payment_method VARCHAR(20) DEFAULT 'cash';
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='rejection_reason') THEN
+          ALTER TABLE orders ADD COLUMN rejection_reason TEXT;
+        END IF;
       END
       $$;
     `);

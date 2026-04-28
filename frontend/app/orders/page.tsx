@@ -62,6 +62,7 @@ export default function MyOrdersPage() {
       case 'preparing': return <RefreshCcw className="h-4 w-4 animate-spin-slow" />;
       case 'ready': return <CheckCircle className="h-4 w-4" />;
       case 'delivered': return <Truck className="h-4 w-4" />;
+      case 'rejected': return <Package className="h-4 w-4 text-red-500" />;
       default: return <Package className="h-4 w-4" />;
     }
   };
@@ -152,6 +153,7 @@ export default function MyOrdersPage() {
                       <div className="flex items-center gap-3">
                         <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                           order.status === 'delivered' ? 'bg-green-50 text-green-600' :
+                          order.status === 'rejected' ? 'bg-red-50 text-red-600' :
                           order.status === 'pending' ? 'bg-yellow-50 text-yellow-600' :
                           'bg-blue-50 text-blue-600'
                         }`}>
@@ -163,6 +165,18 @@ export default function MyOrdersPage() {
                         </p>
                       </div>
                     </div>
+
+                    {order.status === 'rejected' && order.rejection_reason && (
+                      <div className="mb-6 p-4 bg-red-50 rounded-xl border border-red-100 flex items-start gap-3">
+                        <div className="bg-red-500 p-1.5 rounded-lg shrink-0 mt-0.5">
+                          <Package className="h-4 w-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-black text-red-500 uppercase tracking-widest mb-1">Reason for Rejection</p>
+                          <p className="text-sm text-red-800 font-medium italic">"{order.rejection_reason}"</p>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-between border-t border-gray-50 pt-6">
                       <div>

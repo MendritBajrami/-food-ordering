@@ -111,16 +111,15 @@ const getOrderById = async (req, res) => {
 const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
-
-    const validStatuses = ['pending', 'preparing', 'ready', 'delivered'];
+    const { status, reason } = req.body;
+    const validStatuses = ['pending', 'preparing', 'ready', 'delivered', 'rejected'];
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({ error: 'Invalid status. Must be: pending, preparing, ready, or delivered' });
+      return res.status(400).json({ error: 'Invalid status' });
     }
 
     const result = await db.query(
-      'UPDATE orders SET status = $1 WHERE id = $2 RETURNING *',
-      [status, id]
+      'UPDATE orders SET status = $1, rejection_reason = $2 WHERE id = $3 RETURNING *',
+      [status, reason || null, id]
     );
 
     if (result.rows.length === 0) {
@@ -128,7 +127,7 @@ const updateOrderStatus = async (req, res) => {
     }
 
     if (io) {
-      io.to('admin').emit('order-updated', { order_id: id, status });
+      io.to('admin').emit('order-updated', { order_id: id, status, reason });
     }
 
     res.json({ order: result.rows[0] });

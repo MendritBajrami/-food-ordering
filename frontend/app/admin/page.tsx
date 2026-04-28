@@ -70,10 +70,10 @@ export default function AdminPage() {
     return () => { socket.disconnect(); };
   }, [token, authLoading, loadOrders, loadStats]);
 
-  const handleUpdateStatus = async (orderId: number, status: string) => {
+  const handleUpdateStatus = async (orderId: number, status: string, reason?: string) => {
     try {
-      await api.orders.updateStatus(orderId, status);
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: status as Order['status'] } : o));
+      await api.orders.updateStatus(orderId, status, reason);
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: status as Order['status'], rejection_reason: reason } : o));
       loadStats();
     } catch (e) { console.error(e); }
   };

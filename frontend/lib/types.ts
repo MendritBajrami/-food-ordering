@@ -35,7 +35,9 @@ export interface Order {
   phone: string;
   address: string;
   delivery_type: 'delivery' | 'pickup';
-  status: 'pending' | 'preparing' | 'ready' | 'delivered';
+  status: 'pending' | 'preparing' | 'ready' | 'delivered' | 'rejected';
+  rejection_reason?: string;
+
   total_price: number;
   items: OrderItem[];
   created_at: string;

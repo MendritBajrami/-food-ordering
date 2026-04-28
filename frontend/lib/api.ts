@@ -81,8 +81,8 @@ export const api = {
       apiRequest<{ orders: Order[] }>('/orders/my'),
     getById: (id: number) =>
       apiRequest<{ order: Order }>(`/orders/${id}`),
-    updateStatus: (id: number, status: string) =>
-      apiRequest<{ order: Order }>(`/orders/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+    updateStatus: (id: number, status: string, reason?: string) =>
+      apiRequest<{ order: Order }>(`/orders/${id}`, { method: 'PATCH', body: JSON.stringify({ status, reason }) }),
     getStats: () =>
       apiRequest<{ stats: { total_orders: number; total_revenue: number } }>('/orders/stats'),
   },
