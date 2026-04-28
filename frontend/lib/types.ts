@@ -49,4 +49,4 @@ export interface CreateOrderData {
   items: { product_id: number; quantity: number }[];
 }
 
-export type Category = 'all' | 'burgers' | 'fries' | 'drinks' | 'combos';
+export type Category = 'all' | 'burgers' | 'fries' | 'drinks' | 'combos' | 'desserts';

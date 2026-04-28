@@ -34,7 +34,7 @@ export default function MenuPage() {
     let filtered = products;
 
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(p => p.category === selectedCategory);
+      filtered = filtered.filter(p => p.category?.toLowerCase() === selectedCategory.toLowerCase());
     }
 
     if (searchQuery) {

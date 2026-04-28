@@ -9,6 +9,7 @@ const categories: { value: Category; label: string }[] = [
   { value: 'fries', label: 'Fries' },
   { value: 'drinks', label: 'Drinks' },
   { value: 'combos', label: 'Combos' },
+  { value: 'desserts', label: 'Desserts' },
 ];
 
 interface CategoryFilterProps {
