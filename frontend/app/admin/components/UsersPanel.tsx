@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { User } from '@/lib/types';
-import { UserPlus, Trash2, Shield, ShieldAlert, Search, X, Save, Phone, MapPin, User as UserIcon, KeyRound } from 'lucide-react';
+import { UserPlus, Trash2, Shield, ShieldAlert, Search, X, Save, Phone, MapPin, User as UserIcon, KeyRound, Pencil } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 
@@ -13,9 +13,11 @@ export default function UsersPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   
-  // Add user form state
-  const [newUser, setNewUser] = useState({
+  // Form state
+  const [userForm, setUserForm] = useState({
     name: '',
     phone: '',
     password: '',
@@ -48,15 +50,58 @@ export default function UsersPanel() {
     setIsSubmitting(true);
     setError('');
     try {
-      await api.users.create(newUser);
+      await api.users.create(userForm);
       await loadUsers();
       setShowAddModal(false);
-      setNewUser({ name: '', phone: '', password: '', address: '', role: 'customer' });
+      resetForm();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to create user');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleEditUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setIsSubmitting(true);
+    setError('');
+    try {
+      const updateData: any = { 
+        name: userForm.name, 
+        phone: userForm.phone, 
+        address: userForm.address, 
+        role: userForm.role 
+      };
+      // Only include password if it's not empty (backend might not handle empty password gracefully as "don't change")
+      if (userForm.password) updateData.password = userForm.password;
+      
+      await api.users.update(editingUser.id, updateData);
+      await loadUsers();
+      setShowEditModal(false);
+      resetForm();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update user');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const resetForm = () => {
+    setUserForm({ name: '', phone: '', password: '', address: '', role: 'customer' });
+    setEditingUser(null);
+  };
+
+  const openEditModal = (user: User) => {
+    setEditingUser(user);
+    setUserForm({
+      name: user.name,
+      phone: user.phone,
+      password: '', // Don't show password
+      address: user.address || '',
+      role: user.role
+    });
+    setShowEditModal(true);
   };
 
   const handleDeleteUser = async (id: number) => {
@@ -100,7 +145,7 @@ export default function UsersPanel() {
         </div>
         
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => { resetForm(); setShowAddModal(true); }}
           className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white font-bold px-6 py-3 rounded-2xl transition-all shadow-lg shadow-red-500/20 active:scale-95"
         >
           <UserPlus className="h-5 w-5" />
@@ -173,6 +218,13 @@ export default function UsersPanel() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
+                          onClick={() => openEditModal(user)}
+                          className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 hover:text-red-500 transition-all"
+                          title="Edit User"
+                        >
+                          <Pencil className="h-5 w-5" />
+                        </button>
+                        <button
                           onClick={() => handleToggleRole(user)}
                           title={user.role === 'admin' ? 'Demote to Customer' : 'Promote to Admin'}
                           className={`p-2 rounded-xl transition-all ${
@@ -184,6 +236,7 @@ export default function UsersPanel() {
                         <button
                           onClick={() => handleDeleteUser(user.id)}
                           className="p-2 rounded-xl text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all"
+                          title="Delete User"
                         >
                           <Trash2 className="h-5 w-5" />
                         </button>
@@ -197,15 +250,15 @@ export default function UsersPanel() {
         </div>
       </div>
 
-      {/* Add User Modal */}
+      {/* Add/Edit User Modal */}
       <AnimatePresence>
-        {showAddModal && (
+        {(showAddModal || showEditModal) && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setShowAddModal(false)}
+              onClick={() => { setShowAddModal(false); setShowEditModal(false); resetForm(); }}
               className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             />
             <motion.div
@@ -215,19 +268,28 @@ export default function UsersPanel() {
               className="relative bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden"
             >
               <div className="px-8 pt-8 pb-4 flex items-center justify-between">
-                <h3 className="text-2xl font-black text-gray-900 tracking-tight">Add New User</h3>
-                <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <h3 className="text-2xl font-black text-gray-900 tracking-tight">
+                  {showEditModal ? 'Edit User' : 'Add New User'}
+                </h3>
+                <button onClick={() => { setShowAddModal(false); setShowEditModal(false); resetForm(); }} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                   <X className="h-6 w-6 text-gray-400" />
                 </button>
               </div>
 
-              <form onSubmit={handleAddUser} className="p-8 space-y-4">
+              <form onSubmit={showEditModal ? handleEditUser : handleAddUser} className="p-8 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <Input label="Name" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} icon={<UserIcon className="h-5 w-5" />} required />
-                  <Input label="Phone" value={newUser.phone} onChange={e => setNewUser({...newUser, phone: e.target.value})} icon={<Phone className="h-5 w-5" />} required />
+                  <Input label="Name" value={userForm.name} onChange={e => setUserForm({...userForm, name: e.target.value})} icon={<UserIcon className="h-5 w-5" />} required />
+                  <Input label="Phone" value={userForm.phone} onChange={e => setUserForm({...userForm, phone: e.target.value})} icon={<Phone className="h-5 w-5" />} required />
                 </div>
-                <Input label="Password" type="password" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} icon={<KeyRound className="h-5 w-5" />} required />
-                <Input label="Address" value={newUser.address} onChange={e => setNewUser({...newUser, address: e.target.value})} icon={<MapPin className="h-5 w-5" />} />
+                <Input 
+                  label={showEditModal ? "New Password (optional)" : "Password"} 
+                  type="password" 
+                  value={userForm.password} 
+                  onChange={e => setUserForm({...userForm, password: e.target.value})} 
+                  icon={<KeyRound className="h-5 w-5" />} 
+                  required={!showEditModal} 
+                />
+                <Input label="Address" value={userForm.address} onChange={e => setUserForm({...userForm, address: e.target.value})} icon={<MapPin className="h-5 w-5" />} />
                 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Account Role</label>
@@ -236,9 +298,9 @@ export default function UsersPanel() {
                       <button
                         key={r}
                         type="button"
-                        onClick={() => setNewUser({...newUser, role: r as 'customer' | 'admin'})}
+                        onClick={() => setUserForm({...userForm, role: r as 'customer' | 'admin'})}
                         className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                          newUser.role === r ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                          userForm.role === r ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
                         }`}
                       >
                         {r}
@@ -257,7 +319,7 @@ export default function UsersPanel() {
 
                 <div className="pt-4">
                   <Button type="submit" isLoading={isSubmitting} className="w-full h-14 text-lg">
-                    Create Account
+                    {showEditModal ? 'Save Changes' : 'Create Account'}
                   </Button>
                 </div>
               </form>

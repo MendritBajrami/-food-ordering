@@ -161,12 +161,21 @@ const adminAddUser = async (req, res) => {
 const adminUpdateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { role, name, address, phone } = req.body;
+    const { role, name, address, phone, password } = req.body;
     
-    const result = await db.query(
-      'UPDATE users SET role = COALESCE($1, role), name = COALESCE($2, name), address = COALESCE($3, address), phone = COALESCE($4, phone) WHERE id = $5 RETURNING id, name, phone, address, role',
-      [role, name, address, phone, id]
-    );
+    let updateQuery = 'UPDATE users SET role = COALESCE($1, role), name = COALESCE($2, name), address = COALESCE($3, address), phone = COALESCE($4, phone)';
+    let params = [role, name, address, phone];
+    
+    if (password) {
+      const hash = await bcrypt.hash(password, 10);
+      updateQuery += ', password_hash = $' + (params.length + 1);
+      params.push(hash);
+    }
+    
+    updateQuery += ' WHERE id = $' + (params.length + 1) + ' RETURNING id, name, phone, address, role';
+    params.push(id);
+    
+    const result = await db.query(updateQuery, params);
     if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
     res.json({ user: result.rows[0] });
   } catch (error) {
