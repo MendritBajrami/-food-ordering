@@ -340,6 +340,11 @@ Client → Server:
 - [ ] Menu customization per restaurant
 - [ ] Payment integration (Stripe)
 - [ ] SMS notifications (Twilio)
+  - **Technical Plan**:
+    - Integrate `twilio` SDK in backend.
+    - Create `smsService.js` for `sendOrderAlert` and `sendAdminAlert`.
+    - Hook into `orderController.js` to trigger SMS on order creation.
+    - Required Env Vars: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, `ADMIN_PHONE_NUMBER`.
 - [ ] Analytics dashboard
 - [ ] Customer loyalty program
 - [ ] Promo codes
