@@ -2,8 +2,9 @@
   "name": "food-ordering-root",
   "version": "1.0.0",
   "private": true,
+  "main": "index.js",
   "scripts": {
-    "start": "node backend/src/index.js"
+    "start": "node index.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
