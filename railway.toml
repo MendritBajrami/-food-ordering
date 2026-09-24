@@ -1,0 +1,6 @@
+[railway]
+language = "node"
+version = 2
+
+[variables]
+NODE_ENV = "production"
