@@ -14,12 +14,6 @@ const jwt = require('jsonwebtoken');
 const app = express();
 const server = http.createServer(app);
 
-const allowedOrigins = [
-  process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : '',
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-].filter(Boolean);
-
 const io = new Server(server, {
   cors: {
     origin: true, // Allow all origins
@@ -86,9 +80,9 @@ const PORT = process.env.PORT || 5000;
 const { createTables } = require('../database/migrate');
 
 async function startServer() {
-  // Bind server to port immediately so Railway proxy and health checks succeed
-  server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  // Bind server explicitly to 0.0.0.0 so Railway reverse proxy can route traffic
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server listening on 0.0.0.0:${PORT}`);
   });
 
   // Run migrations asynchronously in background
