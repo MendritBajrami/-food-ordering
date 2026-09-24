@@ -40,8 +40,14 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/api/health', async (req, res) => {
+  try {
+    const db = require('./config/database');
+    await db.query('SELECT 1');
+    res.json({ status: 'ok', database: 'connected', timestamp: new Date().toISOString() });
+  } catch (err) {
+    res.status(500).json({ status: 'degraded', database: 'error', error: err.message, timestamp: new Date().toISOString() });
+  }
 });
 
 // 404 Handler
@@ -80,28 +86,18 @@ const PORT = process.env.PORT || 5000;
 const { createTables } = require('../database/migrate');
 
 async function startServer() {
-  const MAX_RETRIES = 5;
-  let retries = 0;
+  // Bind server to port immediately so Railway proxy and health checks succeed
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 
-  while (retries < MAX_RETRIES) {
-    try {
-      console.log(`Starting server and running migrations (Attempt ${retries + 1}/${MAX_RETRIES})...`);
-      await createTables();
-      
-      server.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-      });
-      return; // Success!
-    } catch (error) {
-      retries++;
-      console.error(`Attempt ${retries} failed:`, error.message);
-      if (retries >= MAX_RETRIES) {
-        console.error('FATAL: All connection attempts failed. Exiting.');
-        process.exit(1);
-      }
-      console.log('Retrying in 2 seconds...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    }
+  // Run migrations asynchronously in background
+  try {
+    console.log('Running database migrations...');
+    await createTables();
+    console.log('Database tables verified / created successfully.');
+  } catch (error) {
+    console.error('Database migration notice:', error.message);
   }
 }
 
