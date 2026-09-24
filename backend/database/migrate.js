@@ -61,7 +61,7 @@ async function createTables() {
       )
     `);
     
-    // Ensure user_id and payment_method exist if table was already created
+    // Ensure columns exist and update constraints
     await client.query(`
       DO $$
       BEGIN
@@ -74,10 +74,7 @@ async function createTables() {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='rejection_reason') THEN
           ALTER TABLE orders ADD COLUMN rejection_reason TEXT;
         END IF;
-        
-        -- Add ON DELETE CASCADE to user_id in orders if it's not already there
-        -- This is a bit complex in pure SQL without knowing the constraint name, but we can try to drop and add.
-        -- Using a simpler approach: check for foreign key and recreate it
+
         IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name='orders_user_id_fkey') THEN
           ALTER TABLE orders DROP CONSTRAINT orders_user_id_fkey;
           ALTER TABLE orders ADD CONSTRAINT orders_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
@@ -85,7 +82,26 @@ async function createTables() {
       END
       $$;
     `);
-    console.log('Created/Updated orders table');
+
+    // Clean up existing mismatched user_ids in orders table based on phone numbers
+    await client.query(`
+      UPDATE orders o
+      SET user_id = u.id
+      FROM users u
+      WHERE regexp_replace(o.phone, '\\D', '', 'g') = regexp_replace(u.phone, '\\D', '', 'g')
+        AND (o.user_id IS NULL OR o.user_id != u.id);
+
+      UPDATE orders o
+      SET user_id = NULL
+      WHERE o.user_id IS NOT NULL 
+        AND NOT EXISTS (
+          SELECT 1 FROM users u 
+          WHERE u.id = o.user_id 
+            AND regexp_replace(u.phone, '\\D', '', 'g') = regexp_replace(o.phone, '\\D', '', 'g')
+        );
+    `);
+
+    console.log('Created/Updated orders table and cleaned up user_id mapping');
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS order_items (

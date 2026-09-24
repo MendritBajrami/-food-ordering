@@ -37,7 +37,28 @@ const createOrder = async (req, res) => {
       });
     }
 
-    const userId = req.user ? req.user.id : null;
+    // Determine the user_id to associate with this order
+    let userId = null;
+    const cleanOrderPhone = phone.trim().replace(/\D/g, '');
+
+    if (req.user) {
+      const cleanUserPhone = req.user.phone ? req.user.phone.trim().replace(/\D/g, '') : '';
+      if (cleanOrderPhone === cleanUserPhone) {
+        userId = req.user.id;
+      }
+    }
+
+    // If order phone didn't match logged-in user, check if any registered user matches this phone number
+    if (!userId && cleanOrderPhone) {
+      const userMatch = await client.query(
+        "SELECT id FROM users WHERE regexp_replace(phone, '\\D', '', 'g') = $1",
+        [cleanOrderPhone]
+      );
+      if (userMatch.rows.length > 0) {
+        userId = userMatch.rows[0].id;
+      }
+    }
+
     const orderResult = await client.query(
       'INSERT INTO orders (user_id, customer_name, phone, address, delivery_type, payment_method, total_price) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
       [userId, customer_name, phone, address, delivery_type, payment_method || 'cash', totalPrice]
@@ -159,15 +180,18 @@ const getTodayStats = async (req, res) => {
 const getUserOrders = async (req, res) => {
   try {
     const userId = req.user.id;
+    const userPhone = req.user.phone ? req.user.phone.trim().replace(/\D/g, '') : '';
+
     const result = await db.query(`
       SELECT o.*, 
         json_agg(json_build_object('id', oi.id, 'product_id', oi.product_id, 'quantity', oi.quantity, 'price_at_purchase', oi.price_at_purchase)) as items
       FROM orders o
       LEFT JOIN order_items oi ON o.id = oi.order_id
-      WHERE o.user_id = $1
+      WHERE o.user_id = $1 OR (regexp_replace(o.phone, '\\D', '', 'g') = $2 AND $2 != '')
       GROUP BY o.id
       ORDER BY o.created_at DESC
-    `, [userId]);
+    `, [userId, userPhone]);
+
     res.json({ orders: result.rows });
   } catch (error) {
     console.error('Get user orders error:', error.message || error);
