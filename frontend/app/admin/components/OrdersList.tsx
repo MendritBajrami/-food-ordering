@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, ChefHat, CheckCircle, Truck, ChevronDown, Phone, MapPin, Package, LucideIcon } from 'lucide-react';
+import { Clock, ChefHat, CheckCircle, Truck, ChevronDown, Phone, MapPin, Package, User, LucideIcon, Layers } from 'lucide-react';
 import { Order, OrderItem } from '@/lib/types';
 
 interface Props {
@@ -34,9 +34,17 @@ const NEXT_LABEL: Record<string, string> = {
 
 const FILTERS = ['all', 'pending', 'preparing', 'ready', 'delivered', 'rejected'] as const;
 
+interface CustomerGroup {
+  key: string;
+  customer_name: string;
+  phone: string;
+  orders: Order[];
+}
+
 export default function OrdersList({ orders, onUpdateStatus }: Props) {
   const [filter, setFilter] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [openGroupKeys, setOpenGroupKeys] = useState<Record<string, boolean>>({});
   const [rejectId, setRejectId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState('');
 
@@ -44,6 +52,153 @@ export default function OrdersList({ orders, onUpdateStatus }: Props) {
 
   const formatTime = (d: string) => new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+  // Group filtered orders by customer phone (or name if phone missing)
+  const groupMap = new Map<string, CustomerGroup>();
+  filtered.forEach(order => {
+    const key = (order.phone || order.customer_name || 'unknown').trim().toLowerCase();
+    if (!groupMap.has(key)) {
+      groupMap.set(key, {
+        key,
+        customer_name: order.customer_name,
+        phone: order.phone,
+        orders: [],
+      });
+    }
+    groupMap.get(key)!.orders.push(order);
+  });
+
+  const customerGroups = Array.from(groupMap.values());
+
+  const toggleGroup = (key: string) => {
+    setOpenGroupKeys(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const renderSingleOrder = (order: Order) => {
+    const cfg = STATUS_CONFIG[order.status as keyof typeof STATUS_CONFIG];
+    const StatusIcon = cfg?.icon ?? Clock;
+    const nextStatus = NEXT_STATUS[order.status];
+    const isExpanded = expandedId === order.id;
+
+    return (
+      <motion.div key={order.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+        className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        {/* Header row */}
+        <div className="flex items-center gap-3 p-4">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${cfg?.color || 'bg-gray-100'}`}>
+            <StatusIcon className="h-5 w-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-black text-gray-900">#{order.id}</span>
+              <span className="font-semibold text-gray-700 truncate">{order.customer_name}</span>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cfg?.color}`}>{cfg?.label}</span>
+            </div>
+            <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
+              <span>{formatDate(order.created_at)} {formatTime(order.created_at)}</span>
+              <span className="font-bold text-gray-700">${Number(order.total_price).toFixed(2)}</span>
+              <span className="uppercase tracking-tighter opacity-60">{order.delivery_type}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {nextStatus && (
+              <button onClick={() => onUpdateStatus(order.id, nextStatus)}
+                className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all hover:shadow-md active:scale-95 whitespace-nowrap">
+                {NEXT_LABEL[order.status]}
+              </button>
+            )}
+            {order.status === 'pending' && (
+              <button onClick={() => setRejectId(order.id)}
+                className="bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-500 text-[10px] font-bold px-2 py-2 rounded-xl transition-all">
+                Reject
+              </button>
+            )}
+            <button onClick={() => setExpandedId(isExpanded ? null : order.id)}
+              className="p-2 rounded-xl hover:bg-gray-100 transition-colors">
+              <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                <ChevronDown className="h-4 w-4 text-gray-400" />
+              </motion.div>
+            </button>
+          </div>
+        </div>
+
+        {/* Reject Reason Input */}
+        <AnimatePresence>
+          {rejectId === order.id && (
+            <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
+              className="bg-red-50 px-4 py-3 border-t border-red-100">
+              <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-2">Rejection Reason</p>
+              <div className="flex gap-2">
+                <input type="text" placeholder="e.g. Out of stock, busy..." autoFocus
+                  value={rejectReason} onChange={e => setRejectReason(e.target.value)}
+                  className="flex-1 bg-white border border-red-200 rounded-xl px-3 py-1.5 text-xs text-gray-900 focus:ring-2 focus:ring-red-500 outline-none transition-all" />
+                <button onClick={() => { onUpdateStatus(order.id, 'rejected', rejectReason); setRejectId(null); setRejectReason(''); }}
+                  className="bg-red-500 text-white text-[10px] font-bold px-3 rounded-lg hover:bg-red-600">
+                  Confirm Rejection
+                </button>
+                <button onClick={() => setRejectId(null)} className="text-[10px] font-bold text-gray-400 hover:text-gray-600 px-2">Cancel</button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Expanded details */}
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
+              className="overflow-hidden border-t border-gray-50">
+              <div className="p-4 grid sm:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="h-4 w-4 text-gray-300" />
+                    <span className="text-gray-600">{order.phone}</span>
+                  </div>
+                  {order.address && (
+                    <div className="flex items-start gap-2 text-sm">
+                      <MapPin className="h-4 w-4 text-gray-300 mt-0.5" />
+                      <span className="text-gray-600">{order.address}</span>
+                    </div>
+                  )}
+                  {order.rejection_reason && (
+                    <div className="bg-red-50 p-2 rounded-xl border border-red-100">
+                      <p className="text-[10px] font-black text-red-500 uppercase mb-1">Rejection Reason</p>
+                      <p className="text-xs text-red-700 italic">"{order.rejection_reason}"</p>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Items Ordered</p>
+                  <div className="space-y-1">
+                    {(order.items || []).map((item: OrderItem, i: number) => (
+                      <div key={i} className="flex justify-between text-sm">
+                        <span className="text-gray-600">× {item.quantity} Product #{item.product_id}</span>
+                        <span className="font-semibold">${(Number(item.price_at_purchase) * item.quantity).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border-t border-gray-100 mt-2 pt-2 flex justify-between font-black text-sm">
+                    <span>Total</span>
+                    <span className="text-red-500">${Number(order.total_price).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+              {/* All status buttons */}
+              <div className="px-4 pb-4 flex gap-2 flex-wrap">
+                {(['pending','preparing','ready','delivered', 'rejected'] as const).map(s => (
+                  <button key={s} onClick={() => onUpdateStatus(order.id, s)}
+                    className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all ${
+                      order.status === s ? `${STATUS_CONFIG[s].color} ring-2 ring-offset-1 ring-current` : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    }`}>
+                    {STATUS_CONFIG[s].label}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -66,7 +221,7 @@ export default function OrdersList({ orders, onUpdateStatus }: Props) {
         })}
       </div>
 
-      {/* Orders */}
+      {/* Orders List / Collapsible Groups */}
       {filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center">
           <Package className="h-12 w-12 text-gray-200 mx-auto mb-3" />
@@ -75,130 +230,73 @@ export default function OrdersList({ orders, onUpdateStatus }: Props) {
       ) : (
         <div className="space-y-3">
           <AnimatePresence>
-            {filtered.map(order => {
-              const cfg = STATUS_CONFIG[order.status as keyof typeof STATUS_CONFIG];
-              const StatusIcon = cfg?.icon ?? Clock;
-              const nextStatus = NEXT_STATUS[order.status];
-              const isExpanded = expandedId === order.id;
+            {customerGroups.map(group => {
+              // If customer has 2 or more orders, show collapsible group header
+              if (group.orders.length >= 2) {
+                const isOpen = !!openGroupKeys[group.key];
+                const totalSpent = group.orders.reduce((sum, o) => sum + Number(o.total_price), 0);
 
-              return (
-                <motion.div key={order.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                  className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                  {/* Header row */}
-                  <div className="flex items-center gap-3 p-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${cfg?.color || 'bg-gray-100'}`}>
-                      <StatusIcon className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-black text-gray-900">#{order.id}</span>
-                        <span className="font-semibold text-gray-700 truncate">{order.customer_name}</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cfg?.color}`}>{cfg?.label}</span>
+                return (
+                  <motion.div key={group.key} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    className="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
+                    
+                    {/* Collapsible Customer Group Header */}
+                    <button
+                      onClick={() => toggleGroup(group.key)}
+                      className="w-full flex items-center justify-between p-4 hover:bg-gray-50/80 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center font-bold flex-shrink-0 border border-red-100">
+                          <User className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-black text-gray-900 text-base">{group.customer_name}</span>
+                            <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Layers className="h-3 w-3" />
+                              {group.orders.length} Orders
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
+                            <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {group.phone}</span>
+                            <span>•</span>
+                            <span className="font-bold text-gray-700">Combined: ${totalSpent.toFixed(2)}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
-                        <span>{formatDate(order.created_at)} {formatTime(order.created_at)}</span>
-                        <span className="font-bold text-gray-700">${Number(order.total_price).toFixed(2)}</span>
-                        <span className="uppercase tracking-tighter opacity-60">{order.delivery_type}</span>
+
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-xs font-bold text-gray-400 hidden sm:inline-block">
+                          {isOpen ? 'Click to collapse' : 'Click to view orders'}
+                        </span>
+                        <div className="p-2 rounded-xl bg-gray-100">
+                          <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                            <ChevronDown className="h-4 w-4 text-gray-500" />
+                          </motion.div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {nextStatus && (
-                        <button onClick={() => onUpdateStatus(order.id, nextStatus)}
-                          className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all hover:shadow-md active:scale-95 whitespace-nowrap">
-                          {NEXT_LABEL[order.status]}
-                        </button>
-                      )}
-                      {order.status === 'pending' && (
-                        <button onClick={() => setRejectId(order.id)}
-                          className="bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-500 text-[10px] font-bold px-2 py-2 rounded-xl transition-all">
-                          Reject
-                        </button>
-                      )}
-                      <button onClick={() => setExpandedId(isExpanded ? null : order.id)}
-                        className="p-2 rounded-xl hover:bg-gray-100 transition-colors">
-                        <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                          <ChevronDown className="h-4 w-4 text-gray-400" />
+                    </button>
+
+                    {/* Expandable Order List inside Customer Group */}
+                    <AnimatePresence>
+                      {isOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="border-t border-gray-100 bg-gray-50/50 p-3 space-y-3"
+                        >
+                          {group.orders.map(order => renderSingleOrder(order))}
                         </motion.div>
-                      </button>
-                    </div>
-                  </div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              }
 
-                  {/* Reject Reason Input (Simplified inline) */}
-                  <AnimatePresence>
-                    {rejectId === order.id && (
-                      <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
-                        className="bg-red-50 px-4 py-3 border-t border-red-100">
-                        <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-2">Rejection Reason</p>
-                        <div className="flex gap-2">
-                          <input type="text" placeholder="e.g. Out of stock, busy..." autoFocus
-                            value={rejectReason} onChange={e => setRejectReason(e.target.value)}
-                            className="flex-1 bg-white border border-red-200 rounded-xl px-3 py-1.5 text-xs text-gray-900 focus:ring-2 focus:ring-red-500 outline-none transition-all" />
-                          <button onClick={() => { onUpdateStatus(order.id, 'rejected', rejectReason); setRejectId(null); setRejectReason(''); }}
-                            className="bg-red-500 text-white text-[10px] font-bold px-3 rounded-lg hover:bg-red-600">
-                            Confirm Rejection
-                          </button>
-                          <button onClick={() => setRejectId(null)} className="text-[10px] font-bold text-gray-400 hover:text-gray-600 px-2">Cancel</button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Expanded details */}
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
-                        className="overflow-hidden border-t border-gray-50">
-                        <div className="p-4 grid sm:grid-cols-2 gap-4">
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-sm">
-                              <Phone className="h-4 w-4 text-gray-300" />
-                              <span className="text-gray-600">{order.phone}</span>
-                            </div>
-                            {order.address && (
-                              <div className="flex items-start gap-2 text-sm">
-                                <MapPin className="h-4 w-4 text-gray-300 mt-0.5" />
-                                <span className="text-gray-600">{order.address}</span>
-                              </div>
-                            )}
-                            {order.rejection_reason && (
-                              <div className="bg-red-50 p-2 rounded-xl border border-red-100">
-                                <p className="text-[10px] font-black text-red-500 uppercase mb-1">Rejection Reason</p>
-                                <p className="text-xs text-red-700 italic">"{order.rejection_reason}"</p>
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Items Ordered</p>
-                            <div className="space-y-1">
-                              {(order.items || []).map((item: OrderItem, i: number) => (
-                                <div key={i} className="flex justify-between text-sm">
-                                  <span className="text-gray-600">× {item.quantity} Product #{item.product_id}</span>
-                                  <span className="font-semibold">${(Number(item.price_at_purchase) * item.quantity).toFixed(2)}</span>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="border-t border-gray-100 mt-2 pt-2 flex justify-between font-black text-sm">
-                              <span>Total</span>
-                              <span className="text-red-500">${Number(order.total_price).toFixed(2)}</span>
-                            </div>
-                          </div>
-                        </div>
-                        {/* All status buttons */}
-                        <div className="px-4 pb-4 flex gap-2 flex-wrap">
-                          {(['pending','preparing','ready','delivered', 'rejected'] as const).map(s => (
-                            <button key={s} onClick={() => onUpdateStatus(order.id, s)}
-                              className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all ${
-                                order.status === s ? `${STATUS_CONFIG[s].color} ring-2 ring-offset-1 ring-current` : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                              }`}>
-                              {STATUS_CONFIG[s].label}
-                            </button>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              );
+              // Single order for customer: render directly
+              return renderSingleOrder(group.orders[0]);
             })}
           </AnimatePresence>
         </div>
