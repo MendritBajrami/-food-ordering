@@ -93,9 +93,10 @@ const getAllOrders = async (req, res) => {
   try {
     const result = await db.query(`
       SELECT o.*, 
-        json_agg(json_build_object('id', oi.id, 'product_id', oi.product_id, 'quantity', oi.quantity, 'price_at_purchase', oi.price_at_purchase)) as items
+        json_agg(json_build_object('id', oi.id, 'product_id', oi.product_id, 'product_name', p.name, 'quantity', oi.quantity, 'price_at_purchase', oi.price_at_purchase)) as items
       FROM orders o
       LEFT JOIN order_items oi ON o.id = oi.order_id
+      LEFT JOIN products p ON oi.product_id = p.id
       GROUP BY o.id
       ORDER BY o.created_at DESC
     `);
@@ -111,9 +112,10 @@ const getOrderById = async (req, res) => {
     const { id } = req.params;
     const result = await db.query(`
       SELECT o.*, 
-        json_agg(json_build_object('id', oi.id, 'product_id', oi.product_id, 'quantity', oi.quantity, 'price_at_purchase', oi.price_at_purchase)) as items
+        json_agg(json_build_object('id', oi.id, 'product_id', oi.product_id, 'product_name', p.name, 'quantity', oi.quantity, 'price_at_purchase', oi.price_at_purchase)) as items
       FROM orders o
       LEFT JOIN order_items oi ON o.id = oi.order_id
+      LEFT JOIN products p ON oi.product_id = p.id
       WHERE o.id = $1
       GROUP BY o.id
     `, [id]);
@@ -184,9 +186,10 @@ const getUserOrders = async (req, res) => {
 
     const result = await db.query(`
       SELECT o.*, 
-        json_agg(json_build_object('id', oi.id, 'product_id', oi.product_id, 'quantity', oi.quantity, 'price_at_purchase', oi.price_at_purchase)) as items
+        json_agg(json_build_object('id', oi.id, 'product_id', oi.product_id, 'product_name', p.name, 'quantity', oi.quantity, 'price_at_purchase', oi.price_at_purchase)) as items
       FROM orders o
       LEFT JOIN order_items oi ON o.id = oi.order_id
+      LEFT JOIN products p ON oi.product_id = p.id
       WHERE o.user_id = $1 OR (regexp_replace(o.phone, '\\D', '', 'g') = $2 AND $2 != '')
       GROUP BY o.id
       ORDER BY o.created_at DESC

@@ -25,6 +25,7 @@ export interface User {
 export interface OrderItem {
   id: number;
   product_id: number;
+  product_name?: string;
   quantity: number;
   price_at_purchase: number;
 }
