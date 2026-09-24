@@ -10,7 +10,7 @@ import Input from '@/components/ui/Input';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, logout, token } = useAuth();
+  const { user, logout, token, updateUser } = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordPanel, setShowPasswordPanel] = useState(false);
@@ -74,7 +74,11 @@ export default function ProfilePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Update failed');
-      setSuccess('Profile saved!');
+      
+      if (data.user) {
+        updateUser(data.user);
+      }
+      setSuccess('Profile saved and updated in database!');
       setIsEditing(false);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Update failed');
@@ -109,6 +113,10 @@ export default function ProfilePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Password change failed');
+      
+      if (data.user) {
+        updateUser(data.user);
+      }
       setPasswordSuccess('Password changed successfully!');
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setShowPasswordPanel(false);
@@ -339,12 +347,12 @@ export default function ProfilePage() {
                         if (!res.ok) throw new Error(data.error || 'Deletion failed');
                         logout();
                         router.push('/');
-                        } catch (err: unknown) {
-                          setDeleteError(err instanceof Error ? err.message : 'Deletion failed');
-                        } finally {
-                          setIsDeleting(false);
-                        }
-                      }}
+                      } catch (err: unknown) {
+                        setDeleteError(err instanceof Error ? err.message : 'Deletion failed');
+                      } finally {
+                        setIsDeleting(false);
+                      }
+                    }}
                     disabled={isDeleting || !deletePassword}
                     className="w-full bg-red-500 hover:bg-red-600 text-white font-black py-3.5 rounded-2xl transition-all shadow-lg shadow-red-200 active:scale-95 disabled:opacity-50"
                   >
