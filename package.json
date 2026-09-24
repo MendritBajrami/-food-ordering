@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "postinstall": "npm install --prefix backend",
-    "build": "npm install --prefix backend",
-    "start": "node backend/src/index.js"
+    "postinstall": "npm install --prefix backend || npm install",
+    "build": "npm install --prefix backend || npm install",
+    "start": "node src/index.js || node backend/src/index.js"
   }
 }
