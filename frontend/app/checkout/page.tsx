@@ -119,6 +119,7 @@ export default function CheckoutPage() {
         items: items.map(item => ({
           product_id: item.product.id,
           quantity: item.quantity,
+          removed_ingredients: item.removedIngredients ?? [],
         })),
       };
 
@@ -421,7 +422,7 @@ export default function CheckoutPage() {
               
               <div className="space-y-3 max-h-64 overflow-y-auto mb-4">
                 {items.map(item => (
-                  <div key={item.product.id} className="flex gap-3">
+                  <div key={item.key} className="flex gap-3">
                     <div className="relative w-12 h-12 rounded overflow-hidden flex-shrink-0">
                       <Image
                         src={item.product.image_url}
@@ -432,6 +433,11 @@ export default function CheckoutPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{item.product.name}</p>
+                      {(item.removedIngredients?.length ?? 0) > 0 && (
+                        <p className="text-[11px] text-gray-400 truncate">
+                          No {item.removedIngredients!.join(', ')}
+                        </p>
+                      )}
                       <p className="text-xs text-gray-500">x{item.quantity}</p>
                     </div>
                     <p className="text-sm font-medium">

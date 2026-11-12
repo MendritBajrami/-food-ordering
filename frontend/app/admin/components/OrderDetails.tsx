@@ -96,7 +96,12 @@ export default function OrderDetails({ order, onClose, onUpdateStatus }: OrderDe
                 {order.items?.map((item, index) => (
                   <div key={index} className="flex justify-between text-sm">
                     <span>
-                      {item.quantity}x Item #{item.product_id}
+                      {item.quantity}x {item.product_name || `Item #${item.product_id}`}
+                      {(item.removed_ingredients?.length ?? 0) > 0 && (
+                        <span className="block text-xs text-red-500 font-medium">
+                          No {item.removed_ingredients!.join(', ')}
+                        </span>
+                      )}
                     </span>
                     <span className="text-gray-600">
                       ${(item.price_at_purchase * item.quantity).toFixed(2)}

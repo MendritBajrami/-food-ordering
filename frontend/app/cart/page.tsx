@@ -35,7 +35,7 @@ export default function CartPage() {
         <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
           <div className="divide-y">
             {items.map(item => (
-              <div key={item.product.id} className="p-4 flex gap-4">
+              <div key={item.key} className="p-4 flex gap-4">
                 <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
                   <Image
                     src={item.product.image_url}
@@ -46,25 +46,30 @@ export default function CartPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-gray-900">{item.product.name}</h3>
+                  {(item.removedIngredients?.length ?? 0) > 0 && (
+                    <p className="text-xs text-gray-400 font-medium">
+                      No {item.removedIngredients!.join(', ')}
+                    </p>
+                  )}
                   <p className="text-red-500 font-semibold">
                     ${Number(item.product.price).toFixed(2)}
                   </p>
                   <div className="flex items-center gap-3 mt-2">
                     <button
-                      onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                      onClick={() => updateQuantity(item.key, item.quantity - 1)}
                       className="p-1 hover:bg-gray-100 rounded transition-colors"
                     >
                       <Minus className="h-4 w-4" />
                     </button>
                     <span className="font-medium w-8 text-center">{item.quantity}</span>
                     <button
-                      onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                      onClick={() => updateQuantity(item.key, item.quantity + 1)}
                       className="p-1 hover:bg-gray-100 rounded transition-colors"
                     >
                       <Plus className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={() => removeItem(item.product.id)}
+                      onClick={() => removeItem(item.key)}
                       className="p-1 hover:bg-red-100 text-red-500 rounded transition-colors ml-auto"
                     >
                       <Trash2 className="h-4 w-4" />

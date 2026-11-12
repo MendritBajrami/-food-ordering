@@ -3,15 +3,21 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { CartItem, Product } from '@/lib/types';
 
+/** Builds a unique line key from a product + removed ingredients combination */
+export const buildCartKey = (productId: number, removedIngredients: string[] = []): string => {
+  const removed = [...removedIngredients].sort().join('|');
+  return removed ? `${productId}-no-${removed}` : `${productId}`;
+};
+
 interface CartState {
   items: CartItem[];
   isOpen: boolean;
 }
 
 type CartAction =
-  | { type: 'ADD_ITEM'; product: Product; quantity?: number }
-  | { type: 'REMOVE_ITEM'; productId: number }
-  | { type: 'UPDATE_QUANTITY'; productId: number; quantity: number }
+  | { type: 'ADD_ITEM'; product: Product; quantity?: number; removedIngredients?: string[] }
+  | { type: 'REMOVE_ITEM'; key: string }
+  | { type: 'UPDATE_QUANTITY'; key: string; quantity: number }
   | { type: 'CLEAR_CART' }
   | { type: 'TOGGLE_DRAWER'; isOpen?: boolean }
   | { type: 'LOAD_CART'; items: CartItem[] };
@@ -25,12 +31,14 @@ function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case 'ADD_ITEM': {
       const quantityToAdd = action.quantity ?? 1;
-      const existingItem = state.items.find(item => item.product.id === action.product.id);
+      const removedIngredients = action.removedIngredients ?? [];
+      const key = buildCartKey(action.product.id, removedIngredients);
+      const existingItem = state.items.find(item => item.key === key);
       if (existingItem) {
         return {
           ...state,
           items: state.items.map(item =>
-            item.product.id === action.product.id
+            item.key === key
               ? { ...item, quantity: item.quantity + quantityToAdd }
               : item
           ),
@@ -38,25 +46,25 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       }
       return {
         ...state,
-        items: [...state.items, { product: action.product, quantity: quantityToAdd }],
+        items: [...state.items, { key, product: action.product, quantity: quantityToAdd, removedIngredients }],
       };
     }
     case 'REMOVE_ITEM':
       return {
         ...state,
-        items: state.items.filter(item => item.product.id !== action.productId),
+        items: state.items.filter(item => item.key !== action.key),
       };
     case 'UPDATE_QUANTITY': {
       if (action.quantity <= 0) {
         return {
           ...state,
-          items: state.items.filter(item => item.product.id !== action.productId),
+          items: state.items.filter(item => item.key !== action.key),
         };
       }
       return {
         ...state,
         items: state.items.map(item =>
-          item.product.id === action.productId
+          item.key === action.key
             ? { ...item, quantity: action.quantity }
             : item
         ),
@@ -76,9 +84,9 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 interface CartContextType {
   items: CartItem[];
   isOpen: boolean;
-  addItem: (product: Product, quantity?: number) => void;
-  removeItem: (productId: number) => void;
-  updateQuantity: (productId: number, quantity: number) => void;
+  addItem: (product: Product, quantity?: number, removedIngredients?: string[]) => void;
+  removeItem: (key: string) => void;
+  updateQuantity: (key: string, quantity: number) => void;
   clearCart: () => void;
   toggleDrawer: (isOpen?: boolean) => void;
   totalItems: number;
@@ -97,7 +105,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (stored) {
       try {
         const items = JSON.parse(stored);
-        dispatch({ type: 'LOAD_CART', items });
+        // Migrate legacy carts (no key / no removedIngredients)
+        const migrated: CartItem[] = (Array.isArray(items) ? items : [])
+          .filter((item: CartItem) => item && item.product)
+          .map((item: CartItem) => ({
+            ...item,
+            removedIngredients: item.removedIngredients ?? [],
+            key: item.key ?? buildCartKey(item.product.id, item.removedIngredients ?? []),
+          }));
+        dispatch({ type: 'LOAD_CART', items: migrated });
       } catch (e) {
         console.error('Failed to load cart from storage');
       }
@@ -108,10 +124,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state.items));
   }, [state.items]);
 
-  const addItem = (product: Product, quantity?: number) => dispatch({ type: 'ADD_ITEM', product, quantity });
-  const removeItem = (productId: number) => dispatch({ type: 'REMOVE_ITEM', productId });
-  const updateQuantity = (productId: number, quantity: number) =>
-    dispatch({ type: 'UPDATE_QUANTITY', productId, quantity });
+  const addItem = (product: Product, quantity?: number, removedIngredients?: string[]) =>
+    dispatch({ type: 'ADD_ITEM', product, quantity, removedIngredients });
+  const removeItem = (key: string) => dispatch({ type: 'REMOVE_ITEM', key });
+  const updateQuantity = (key: string, quantity: number) =>
+    dispatch({ type: 'UPDATE_QUANTITY', key, quantity });
   const clearCart = () => dispatch({ type: 'CLEAR_CART' });
   const toggleDrawer = (isOpen?: boolean) => dispatch({ type: 'TOGGLE_DRAWER', isOpen });
 

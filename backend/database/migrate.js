@@ -44,6 +44,17 @@ async function createTables() {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
+
+    // Ensure ingredients column exists if table was created earlier
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='ingredients') THEN
+          ALTER TABLE products ADD COLUMN ingredients JSONB DEFAULT '[]'::jsonb;
+        END IF;
+      END
+      $$;
+    `);
     console.log('Created products table');
 
     await client.query(`
@@ -113,6 +124,17 @@ async function createTables() {
       )
     `);
     console.log('Created order_items table');
+
+    // Ensure columns exist and update constraints
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='order_items' AND column_name='removed_ingredients') THEN
+          ALTER TABLE order_items ADD COLUMN removed_ingredients JSONB DEFAULT '[]'::jsonb;
+        END IF;
+      END
+      $$;
+    `);
 
     await client.query('COMMIT');
     console.log('All tables created successfully');

@@ -55,7 +55,7 @@ export default function CartDrawer() {
                   <AnimatePresence>
                     {items.map(item => (
                       <motion.div
-                        key={item.product.id}
+                        key={item.key}
                         layout
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -74,13 +74,18 @@ export default function CartDrawer() {
                           <h3 className="font-medium text-gray-900 truncate">
                             {item.product.name}
                           </h3>
+                          {(item.removedIngredients?.length ?? 0) > 0 && (
+                            <p className="text-[11px] text-gray-400 font-medium truncate">
+                              No {item.removedIngredients!.join(', ')}
+                            </p>
+                          )}
                           <p className="text-red-500 font-semibold">
                             ${Number(item.product.price).toFixed(2)}
                           </p>
                           <div className="flex items-center gap-2 mt-2">
                             <button
                               onClick={() =>
-                                updateQuantity(item.product.id, item.quantity - 1)
+                                updateQuantity(item.key, item.quantity - 1)
                               }
                               className="p-1 hover:bg-gray-200 rounded transition-colors"
                             >
@@ -91,14 +96,14 @@ export default function CartDrawer() {
                             </span>
                             <button
                               onClick={() =>
-                                updateQuantity(item.product.id, item.quantity + 1)
+                                updateQuantity(item.key, item.quantity + 1)
                               }
                               className="p-1 hover:bg-gray-200 rounded transition-colors"
                             >
                               <Plus className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={() => removeItem(item.product.id)}
+                              onClick={() => removeItem(item.key)}
                               className="p-1 hover:bg-red-100 text-red-500 rounded transition-colors ml-auto"
                             >
                               <Trash2 className="h-4 w-4" />

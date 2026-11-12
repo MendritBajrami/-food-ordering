@@ -30,10 +30,23 @@ const createOrder = async (req, res) => {
       const product = productResult.rows[0];
       const itemTotal = parseFloat(product.price) * item.quantity;
       totalPrice += itemTotal;
+
+      // Validate removed ingredients against the product's ingredient list
+      let removedIngredients = [];
+      if (Array.isArray(item.removed_ingredients)) {
+        const available = Array.isArray(product.ingredients) ? product.ingredients : [];
+        removedIngredients = item.removed_ingredients
+          .filter(ing => typeof ing === 'string' && ing.trim().length > 0 && ing.trim().length <= 50)
+          .map(ing => ing.trim())
+          .filter(ing => available.includes(ing))
+          .slice(0, 15);
+      }
+
       orderItems.push({
         product_id: product.id,
         quantity: item.quantity,
-        price_at_purchase: product.price
+        price_at_purchase: product.price,
+        removed_ingredients: removedIngredients
       });
     }
 
@@ -68,8 +81,8 @@ const createOrder = async (req, res) => {
 
     for (const item of orderItems) {
       await client.query(
-        'INSERT INTO order_items (order_id, product_id, quantity, price_at_purchase) VALUES ($1, $2, $3, $4)',
-        [order.id, item.product_id, item.quantity, item.price_at_purchase]
+        'INSERT INTO order_items (order_id, product_id, quantity, price_at_purchase, removed_ingredients) VALUES ($1, $2, $3, $4, $5)',
+        [order.id, item.product_id, item.quantity, item.price_at_purchase, JSON.stringify(item.removed_ingredients)]
       );
     }
 
@@ -89,11 +102,15 @@ const createOrder = async (req, res) => {
   }
 };
 
+const getOrderItemsAgg = () => `
+      json_agg(json_build_object('id', oi.id, 'product_id', oi.product_id, 'product_name', p.name, 'product_image', p.image_url, 'quantity', oi.quantity, 'price_at_purchase', oi.price_at_purchase, 'removed_ingredients', COALESCE(oi.removed_ingredients, '[]'::jsonb))) as items
+`;
+
 const getAllOrders = async (req, res) => {
   try {
     const result = await db.query(`
       SELECT o.*, 
-        json_agg(json_build_object('id', oi.id, 'product_id', oi.product_id, 'product_name', p.name, 'quantity', oi.quantity, 'price_at_purchase', oi.price_at_purchase)) as items
+        ${getOrderItemsAgg()}
       FROM orders o
       LEFT JOIN order_items oi ON o.id = oi.order_id
       LEFT JOIN products p ON oi.product_id = p.id
@@ -112,7 +129,7 @@ const getOrderById = async (req, res) => {
     const { id } = req.params;
     const result = await db.query(`
       SELECT o.*, 
-        json_agg(json_build_object('id', oi.id, 'product_id', oi.product_id, 'product_name', p.name, 'quantity', oi.quantity, 'price_at_purchase', oi.price_at_purchase)) as items
+        ${getOrderItemsAgg()}
       FROM orders o
       LEFT JOIN order_items oi ON o.id = oi.order_id
       LEFT JOIN products p ON oi.product_id = p.id
@@ -186,7 +203,7 @@ const getUserOrders = async (req, res) => {
 
     const result = await db.query(`
       SELECT o.*, 
-        json_agg(json_build_object('id', oi.id, 'product_id', oi.product_id, 'product_name', p.name, 'quantity', oi.quantity, 'price_at_purchase', oi.price_at_purchase)) as items
+        ${getOrderItemsAgg()}
       FROM orders o
       LEFT JOIN order_items oi ON o.id = oi.order_id
       LEFT JOIN products p ON oi.product_id = p.id

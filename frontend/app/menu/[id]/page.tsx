@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Plus, ShoppingCart, Clock, Flame, Utensils, Star } from 'lucide-react';
+import { ChevronLeft, Plus, ShoppingCart, Clock, Flame, Utensils, Star, X, SlidersHorizontal } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Product } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
@@ -17,6 +17,7 @@ export default function ProductDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [removedIngredients, setRemovedIngredients] = useState<string[]>([]);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -24,6 +25,7 @@ export default function ProductDetailsPage() {
         setIsLoading(true);
         const data = await api.products.getById(Number(id));
         setProduct(data.product);
+        setRemovedIngredients([]);
       } catch (error) {
         console.error('Failed to load product:', error);
       } finally {
@@ -33,11 +35,17 @@ export default function ProductDetailsPage() {
     if (id) loadProduct();
   }, [id]);
 
+  const toggleIngredient = (ingredient: string) => {
+    setRemovedIngredients(prev =>
+      prev.includes(ingredient)
+        ? prev.filter(i => i !== ingredient)
+        : [...prev, ingredient]
+    );
+  };
+
   const handleAddToCart = () => {
     if (!product) return;
-    for (let i = 0; i < quantity; i++) {
-      addItem(product);
-    }
+    addItem(product, quantity, removedIngredients);
     setIsAdding(true);
     setTimeout(() => setIsAdding(false), 2000);
   };
@@ -114,6 +122,48 @@ export default function ProductDetailsPage() {
           <p className="text-xl text-gray-500 font-medium leading-relaxed mb-8">
             {product.description}
           </p>
+
+          {/* Ingredient customization */}
+          {(product.ingredients?.length ?? 0) > 0 && (
+            <div className="mb-8 bg-white rounded-3xl border border-gray-100 p-6">
+              <div className="flex items-center gap-2 mb-1">
+                <SlidersHorizontal className="h-5 w-5 text-red-500" />
+                <h3 className="text-lg font-black text-gray-900">Make it yours</h3>
+              </div>
+              <p className="text-sm text-gray-400 font-medium mb-4">
+                Tap an ingredient to remove it from your order
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {product.ingredients!.map(ingredient => {
+                  const removed = removedIngredients.includes(ingredient);
+                  return (
+                    <button
+                      key={ingredient}
+                      type="button"
+                      onClick={() => toggleIngredient(ingredient)}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold border transition-all duration-200 active:scale-95 ${
+                        removed
+                          ? 'bg-red-50 border-red-200 text-red-400 line-through opacity-70'
+                          : 'bg-gray-50 border-gray-100 text-gray-700 hover:border-red-300 hover:text-red-500'
+                      }`}
+                    >
+                      {removed && <X className="h-3.5 w-3.5" />}
+                      {ingredient}
+                    </button>
+                  );
+                })}
+              </div>
+              {removedIngredients.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setRemovedIngredients([])}
+                  className="mt-4 text-xs font-bold text-gray-400 hover:text-red-500 underline underline-offset-4 transition-colors"
+                >
+                  Reset all ingredients
+                </button>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-4 mb-10">
             {[

@@ -39,15 +39,15 @@ const getProductById = async (req, res) => {
 
 const createProduct = async (req, res) => {
   try {
-    const { name, description, price, image_url, category } = req.body;
+    const { name, description, price, image_url, category, ingredients } = req.body;
 
     if (!name || !price || !image_url || !category) {
       return res.status(400).json({ error: 'Name, price, image_url, and category are required' });
     }
 
     const result = await db.query(
-      'INSERT INTO products (name, description, price, image_url, category) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [name, description, price, image_url, category]
+      'INSERT INTO products (name, description, price, image_url, category, ingredients) VALUES ($1, $2, $3, $4, $5, $6::jsonb) RETURNING *',
+      [name, description, price, image_url, category, JSON.stringify(Array.isArray(ingredients) ? ingredients : [])]
     );
 
     res.status(201).json({ product: result.rows[0] });
@@ -60,7 +60,7 @@ const createProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, price, image_url, category, is_available } = req.body;
+    const { name, description, price, image_url, category, is_available, ingredients } = req.body;
 
     const result = await db.query(
       `UPDATE products 
@@ -69,10 +69,11 @@ const updateProduct = async (req, res) => {
            price = COALESCE($3, price), 
            image_url = CASE WHEN $4::text IS NOT NULL THEN $4::text ELSE image_url END, 
            category = COALESCE($5, category), 
-           is_available = COALESCE($6, is_available) 
+           is_available = COALESCE($6, is_available),
+           ingredients = COALESCE($8::jsonb, ingredients)
        WHERE id = $7 
        RETURNING *`,
-      [name, description, price, image_url !== undefined ? image_url : null, category, is_available !== undefined ? is_available : null, id]
+      [name, description, price, image_url !== undefined ? image_url : null, category, is_available !== undefined ? is_available : null, id, Array.isArray(ingredients) ? JSON.stringify(ingredients) : null]
     );
 
     if (result.rows.length === 0) {

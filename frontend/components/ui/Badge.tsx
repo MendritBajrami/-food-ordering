@@ -7,6 +7,7 @@ const statusColors = {
   preparing: 'bg-blue-100 text-blue-800',
   ready: 'bg-green-100 text-green-800',
   delivered: 'bg-gray-100 text-gray-800',
+  rejected: 'bg-red-100 text-red-800',
 };
 
 const statusLabels = {
@@ -14,10 +15,11 @@ const statusLabels = {
   preparing: 'Preparing',
   ready: 'Ready',
   delivered: 'Delivered',
+  rejected: 'Rejected',
 };
 
 interface BadgeProps {
-  status: 'pending' | 'preparing' | 'ready' | 'delivered';
+  status: 'pending' | 'preparing' | 'ready' | 'delivered' | 'rejected';
 }
 
 export default function Badge({ status }: BadgeProps) {

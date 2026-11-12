@@ -45,7 +45,7 @@ export default function MyOrdersPage() {
         // better: fetch the product by id to get current price and image
         try {
           const { product } = await api.products.getById(item.product_id);
-          addItem(product, item.quantity);
+          addItem(product, item.quantity, item.removed_ingredients ?? []);
         } catch (e) {
           console.error(`Could not reorder product ${item.product_id}`, e);
         }
