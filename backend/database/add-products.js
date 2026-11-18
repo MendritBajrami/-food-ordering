@@ -18,7 +18,7 @@ const newProducts = [
     name: 'Smoky Bacon Deluxe',
     description: 'Flame-grilled beef patty stacked with crispy bacon, melted cheddar, caramelized onions and creamy smokehouse sauce on a toasted sesame bun.',
     price: 13.99,
-    image_url: imgUrl('1598887142487-d3f4ab4fd181'),
+    image_url: imgUrl('1596662951482-0c4ba74a6df6'),
     category: 'burgers',
     ingredients: ['Beef patty', 'Bacon', 'Cheddar', 'Caramelized onions', 'Smokehouse sauce', 'Lettuce', 'Tomato', 'Pickles', 'Sesame bun'],
   },
@@ -147,37 +147,39 @@ const newProducts = [
   },
 ];
 
-(async () => {
-  try {
-    console.log('Updating existing burgers with customizable ingredients...');
-    for (const [name, ingredients] of Object.entries(existingBurgerIngredients)) {
-      const r = await db.query('UPDATE products SET ingredients = $1::jsonb WHERE name = $2', [
-        JSON.stringify(ingredients), name,
-      ]);
-      console.log(`  ${name}: ${r.rowCount} row(s) updated`);
-    }
-
-    console.log('Adding new products...');
-    for (const p of newProducts) {
-      const exists = await db.query('SELECT id FROM products WHERE name = $1', [p.name]);
-      if (exists.rows.length > 0) {
-        console.log(`  SKIP (exists): ${p.name}`);
-        continue;
-      }
-      await db.query(
-        'INSERT INTO products (name, description, price, image_url, category, ingredients) VALUES ($1, $2, $3, $4, $5, $6::jsonb)',
-        [p.name, p.description, p.price, p.image_url, p.category, JSON.stringify(p.ingredients)]
-      );
-      console.log(`  Added: ${p.name} ($${p.price.toFixed(2)}, ${p.category})`);
-    }
-
-    const count = await db.query('SELECT COUNT(*)::int AS n FROM products');
-    console.log(`Total products in DB: ${count.rows[0].n}`);
-    console.log('Done');
-  } catch (e) {
-    console.error('Error:', e.message);
-    process.exitCode = 1;
-  } finally {
-    db.pool.end();
+async function addProducts() {
+  console.log('Updating existing burgers with customizable ingredients...');
+  for (const [name, ingredients] of Object.entries(existingBurgerIngredients)) {
+    const r = await db.query('UPDATE products SET ingredients = $1::jsonb WHERE name = $2', [
+      JSON.stringify(ingredients), name,
+    ]);
+    console.log(`  ${name}: ${r.rowCount} row(s) updated`);
   }
-})();
+
+  console.log('Adding new products...');
+  for (const p of newProducts) {
+    const exists = await db.query('SELECT id FROM products WHERE name = $1', [p.name]);
+    if (exists.rows.length > 0) {
+      console.log(`  SKIP (exists): ${p.name}`);
+      continue;
+    }
+    await db.query(
+      'INSERT INTO products (name, description, price, image_url, category, ingredients) VALUES ($1, $2, $3, $4, $5, $6::jsonb)',
+      [p.name, p.description, p.price, p.image_url, p.category, JSON.stringify(p.ingredients)]
+    );
+    console.log(`  Added: ${p.name} ($${p.price.toFixed(2)}, ${p.category})`);
+  }
+
+  const count = await db.query('SELECT COUNT(*)::int AS n FROM products');
+  console.log(`Total products in DB: ${count.rows[0].n}`);
+}
+
+if (require.main === module) {
+  const { localizeImages } = require('./localize-images');
+  addProducts()
+    .then(localizeImages)
+    .then(() => { console.log('Done'); db.pool.end(); })
+    .catch((e) => { console.error('Error:', e.message); db.pool.end(); process.exitCode = 1; });
+}
+
+module.exports = { addProducts };

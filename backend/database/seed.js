@@ -1,6 +1,8 @@
 require('dotenv').config();
 const db = require('../src/config/database');
 const bcrypt = require('bcryptjs');
+const { addProducts } = require('./add-products');
+const { localizeImages } = require('./localize-images');
 
 const seedProducts = [
   // BURGERS
@@ -22,7 +24,7 @@ const seedProducts = [
     name: 'Bacon Smokehouse', 
     description: 'Crispy thick-cut maple bacon, grilled onions, sharp cheddar, and smoky hickory BBQ sauce over a juicy half-pound patty.', 
     price: 12.99, 
-    image_url: 'https://images.unsplash.com/photo-1594212699903-ec8a572eca17?q=80&w=2000&auto=format&fit=crop', 
+    image_url: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?q=80&w=2000&auto=format&fit=crop', 
     category: 'burgers' 
   },
   { 
@@ -44,21 +46,21 @@ const seedProducts = [
     name: 'BBQ Bourbon Fries', 
     description: 'Crispy fries tossed in our signature BBQ-Bourbon seasoning, topped with pulled pork and pickled red onions.', 
     price: 8.99, 
-    image_url: 'https://images.unsplash.com/photo-1585109649139-366fea07a66c?q=80&w=2000&auto=format&fit=crop', 
+    image_url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=2000&auto=format&fit=crop', 
     category: 'fries' 
   },
   { 
     name: 'Loaded Chili-Cheese Fries', 
     description: 'Golden fries smothered in slow-cooked beef chili, sharp cheddar sauce, jalapeños, and whipped sour cream.', 
     price: 7.99, 
-    image_url: 'https://images.unsplash.com/photo-1585109649139-366fea07a66c?q=80&w=2000&auto=format&fit=crop', 
+    image_url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=2000&auto=format&fit=crop', 
     category: 'fries' 
   },
   { 
     name: 'Sweet Potato Crunch', 
     description: 'Premium sweet potato fries dusted with cinnamon sugar and salt, served with a chipotle honey dip.', 
     price: 6.49, 
-    image_url: 'https://images.unsplash.com/photo-1572490128847-f0e92c2c4071?q=80&w=2000&auto=format&fit=crop', 
+    image_url: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?q=80&w=2000&auto=format&fit=crop', 
     category: 'fries' 
   },
   // DRINKS
@@ -66,7 +68,7 @@ const seedProducts = [
     name: 'Craft Strawberry Shake', 
     description: 'Hand-spun premium strawberry ice cream, topped with fresh berry coulis, whipped cream, and a maraschino cherry.', 
     price: 6.99, 
-    image_url: 'https://images.unsplash.com/photo-1579954115545-a95591f28be0?q=80&w=2000&auto=format&fit=crop', 
+    image_url: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=2000&auto=format&fit=crop', 
     category: 'drinks' 
   },
   { 
@@ -80,7 +82,7 @@ const seedProducts = [
     name: 'Oreo Blast Shake', 
     description: 'Rich vanilla bean ice cream blended with real Oreo chunks, chocolate ganache, and topped with a whole cookie.', 
     price: 7.49, 
-    image_url: 'https://images.unsplash.com/photo-1572490128847-f0e92c2c4071?q=80&w=2000&auto=format&fit=crop', 
+    image_url: 'https://images.unsplash.com/photo-1595411425732-e69c1abe2763?q=80&w=2000&auto=format&fit=crop', 
     category: 'drinks' 
   },
   // COMBOS
@@ -124,6 +126,10 @@ async function seedDatabase() {
       ['Admin', '1234567890', adminPassword, '123 Restaurant Street', 'admin']
     );
     console.log('Admin created');
+
+    console.log('Adding remaining products, desserts and local images...');
+    await addProducts();
+    await localizeImages();
 
     console.log('Seed complete');
   } catch (error) {
