@@ -185,7 +185,7 @@ export default function MyOrdersPage() {
                       </div>
                       
                       <div className="flex gap-2">
-                        <Link href={`/confirmation?id=${order.id}`}>
+                        <Link href={`/orders/${order.id}`}>
                           <Button variant="secondary" size="sm" className="flex items-center gap-2">
                             <Eye className="h-4 w-4" />
                             View Details

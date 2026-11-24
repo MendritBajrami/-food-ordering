@@ -127,6 +127,10 @@ const getAllOrders = async (req, res) => {
 const getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id;
+    const userPhone = req.user.phone ? req.user.phone.trim().replace(/\D/g, '') : '';
+    const isAdmin = req.user.role === 'admin';
+
     const result = await db.query(`
       SELECT o.*, 
         ${getOrderItemsAgg()}
@@ -134,8 +138,9 @@ const getOrderById = async (req, res) => {
       LEFT JOIN order_items oi ON o.id = oi.order_id
       LEFT JOIN products p ON oi.product_id = p.id
       WHERE o.id = $1
+        AND ($3 = true OR o.user_id = $2 OR (regexp_replace(o.phone, '\\D', '', 'g') = $4 AND $4 != ''))
       GROUP BY o.id
-    `, [id]);
+    `, [id, userId, isAdmin, userPhone]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Order not found' });

@@ -3,7 +3,7 @@
 import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, Clock, Home, MapPin } from 'lucide-react';
+import { CheckCircle, Clock, Home, MapPin, Eye } from 'lucide-react';
 
 function ConfirmationContent() {
   const searchParams = useSearchParams();
@@ -51,13 +51,24 @@ function ConfirmationContent() {
             </div>
           </div>
 
-          <Link
-            href="/menu"
-            className="inline-flex items-center gap-2 bg-red-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-red-600 transition-colors"
-          >
-            <Home className="h-5 w-5" />
-            Back to Menu
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href="/menu"
+              className="inline-flex items-center gap-2 bg-gray-100 text-gray-700 px-6 py-3 rounded-full font-semibold hover:bg-gray-200 transition-colors"
+            >
+              <Home className="h-5 w-5" />
+              Back to Menu
+            </Link>
+            {orderId && (
+              <Link
+                href={`/orders/${orderId}`}
+                className="inline-flex items-center gap-2 bg-red-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-red-600 transition-colors"
+              >
+                <Eye className="h-5 w-5" />
+                View Order Details
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     </div>
