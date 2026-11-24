@@ -22,7 +22,9 @@ export default function LoginPage() {
 
     try {
       await login(formData.phone, formData.password);
-      router.push('/menu');
+      const destination = sessionStorage.getItem('redirectAfterLogin') || '/menu';
+      sessionStorage.removeItem('redirectAfterLogin');
+      router.push(destination);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Invalid credentials');
     } finally {

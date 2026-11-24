@@ -94,25 +94,18 @@ async function createTables() {
       $$;
     `);
 
-    // Clean up existing mismatched user_ids in orders table based on phone numbers
+    // Backfill legacy guest orders that have no owner by matching phone digits.
+    // Never clear an existing user_id: ownership is assigned at checkout and must
+    // survive later phone-number edits in the admin panel.
     await client.query(`
       UPDATE orders o
       SET user_id = u.id
       FROM users u
-      WHERE regexp_replace(o.phone, '\\D', '', 'g') = regexp_replace(u.phone, '\\D', '', 'g')
-        AND (o.user_id IS NULL OR o.user_id != u.id);
-
-      UPDATE orders o
-      SET user_id = NULL
-      WHERE o.user_id IS NOT NULL 
-        AND NOT EXISTS (
-          SELECT 1 FROM users u 
-          WHERE u.id = o.user_id 
-            AND regexp_replace(u.phone, '\\D', '', 'g') = regexp_replace(o.phone, '\\D', '', 'g')
-        );
+      WHERE o.user_id IS NULL
+        AND regexp_replace(o.phone, '\\D', '', 'g') = regexp_replace(u.phone, '\\D', '', 'g');
     `);
 
-    console.log('Created/Updated orders table and cleaned up user_id mapping');
+    console.log('Created/Updated orders table and backfilled legacy guest orders');
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS order_items (

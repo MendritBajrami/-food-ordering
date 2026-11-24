@@ -11,8 +11,15 @@ const createOrder = async (req, res) => {
   try {
     const { customer_name, phone, address, delivery_type, payment_method, items } = req.body;
 
-    if (!customer_name || !phone || !delivery_type || !items || items.length === 0) {
-      return res.status(400).json({ error: 'Customer name, phone, delivery type, and items are required' });
+    if (!customer_name || !String(customer_name).trim() || !String(phone).trim() ||
+        !['delivery', 'pickup'].includes(delivery_type) || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'Customer name, phone, a valid delivery type, and items are required' });
+    }
+    if (delivery_type === 'delivery' && !String(address || '').trim()) {
+      return res.status(400).json({ error: 'Address is required for delivery' });
+    }
+    if (items.length > 50) {
+      return res.status(400).json({ error: 'Too many items in order' });
     }
 
     client = await db.getClient();
@@ -22,13 +29,18 @@ const createOrder = async (req, res) => {
     const orderItems = [];
 
     for (const item of items) {
-      const productResult = await client.query('SELECT * FROM products WHERE id = $1', [item.product_id]);
-      if (productResult.rows.length === 0) {
+      const quantity = Number(item.quantity);
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 50) {
         await client.query('ROLLBACK');
-        return res.status(400).json({ error: `Product with id ${item.product_id} not found` });
+        return res.status(400).json({ error: 'Each item quantity must be between 1 and 50' });
+      }
+      const productResult = await client.query('SELECT * FROM products WHERE id = $1', [item.product_id]);
+      if (productResult.rows.length === 0 || !productResult.rows[0].is_available) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: `Product with id ${item.product_id} is not available` });
       }
       const product = productResult.rows[0];
-      const itemTotal = parseFloat(product.price) * item.quantity;
+      const itemTotal = parseFloat(product.price) * quantity;
       totalPrice += itemTotal;
 
       // Validate removed ingredients against the product's ingredient list
@@ -44,25 +56,22 @@ const createOrder = async (req, res) => {
 
       orderItems.push({
         product_id: product.id,
-        quantity: item.quantity,
+        quantity,
         price_at_purchase: product.price,
         removed_ingredients: removedIngredients
       });
     }
 
-    // Determine the user_id to associate with this order
+    // Determine the user_id to associate with this order.
+    // A logged-in user always owns their order, even if they enter a different contact phone.
     let userId = null;
-    const cleanOrderPhone = phone.trim().replace(/\D/g, '');
+    const cleanOrderPhone = String(phone).trim().replace(/\D/g, '');
 
     if (req.user) {
-      const cleanUserPhone = req.user.phone ? req.user.phone.trim().replace(/\D/g, '') : '';
-      if (cleanOrderPhone === cleanUserPhone) {
-        userId = req.user.id;
-      }
-    }
-
-    // If order phone didn't match logged-in user, check if any registered user matches this phone number
-    if (!userId && cleanOrderPhone) {
+      userId = req.user.id;
+    } else if (cleanOrderPhone) {
+      // Link guest orders to a matching account so they appear in that account's
+      // history once the guest signs up with the same number.
       const userMatch = await client.query(
         "SELECT id FROM users WHERE regexp_replace(phone, '\\D', '', 'g') = $1",
         [cleanOrderPhone]
@@ -88,22 +97,35 @@ const createOrder = async (req, res) => {
 
     await client.query('COMMIT');
 
+    // Return the complete order including its items so the confirmation screen
+    // and admin live view can display it without an extra request.
+    const finalResult = await db.query(`
+      SELECT o.*, 
+        ${getOrderItemsAgg()}
+      FROM orders o
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      LEFT JOIN products p ON oi.product_id = p.id
+      WHERE o.id = $1
+      GROUP BY o.id
+    `, [order.id]);
+    const completeOrder = finalResult.rows[0] || order;
+
     if (io) {
-      io.to('admin').emit('new-order', { order });
+      io.to('admin').emit('new-order', { order: completeOrder });
     }
 
-    res.status(201).json({ order });
+    res.status(201).json({ order: completeOrder });
   } catch (error) {
     if (client) await client.query('ROLLBACK').catch(() => {});
     console.error('Create order error:', error.message || error);
-    res.status(500).json({ error: 'Failed to create order', details: error.message });
+    res.status(500).json({ error: 'Failed to create order' });
   } finally {
     if (client) client.release();
   }
 };
 
 const getOrderItemsAgg = () => `
-      json_agg(json_build_object('id', oi.id, 'product_id', oi.product_id, 'product_name', p.name, 'product_image', p.image_url, 'quantity', oi.quantity, 'price_at_purchase', oi.price_at_purchase, 'removed_ingredients', COALESCE(oi.removed_ingredients, '[]'::jsonb))) as items
+      COALESCE(json_agg(json_build_object('id', oi.id, 'product_id', oi.product_id, 'product_name', p.name, 'product_image', p.image_url, 'quantity', oi.quantity, 'price_at_purchase', oi.price_at_purchase, 'removed_ingredients', COALESCE(oi.removed_ingredients, '[]'::jsonb))) FILTER (WHERE oi.id IS NOT NULL), '[]'::json) as items
 `;
 
 const getAllOrders = async (req, res) => {
@@ -127,6 +149,9 @@ const getAllOrders = async (req, res) => {
 const getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!/^\d+$/.test(String(id))) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
     const userId = req.user.id;
     const userPhone = req.user.phone ? req.user.phone.trim().replace(/\D/g, '') : '';
     const isAdmin = req.user.role === 'admin';
@@ -138,7 +163,7 @@ const getOrderById = async (req, res) => {
       LEFT JOIN order_items oi ON o.id = oi.order_id
       LEFT JOIN products p ON oi.product_id = p.id
       WHERE o.id = $1
-        AND ($3 = true OR o.user_id = $2 OR (regexp_replace(o.phone, '\\D', '', 'g') = $4 AND $4 != ''))
+        AND ($3 = true OR o.user_id = $2 OR (o.user_id IS NULL AND regexp_replace(o.phone, '\\D', '', 'g') = $4 AND $4 != ''))
       GROUP BY o.id
     `, [id, userId, isAdmin, userPhone]);
 
@@ -162,9 +187,27 @@ const updateOrderStatus = async (req, res) => {
       return res.status(400).json({ error: 'Invalid status' });
     }
 
+    const current = await db.query('SELECT status FROM orders WHERE id = $1', [id]);
+    if (current.rows.length === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const allowed = {
+      pending: ['preparing', 'rejected'],
+      preparing: ['ready', 'rejected'],
+      ready: ['delivered', 'rejected'],
+      delivered: [],
+      rejected: [],
+    };
+    const currentStatus = current.rows[0].status;
+    if (status !== currentStatus && !(allowed[currentStatus] || []).includes(status)) {
+      return res.status(400).json({ error: `Cannot change status from ${currentStatus} to ${status}` });
+    }
+
+    const rejectionReason = status === 'rejected' ? (reason || 'Order rejected') : null;
     const result = await db.query(
       'UPDATE orders SET status = $1, rejection_reason = $2 WHERE id = $3 RETURNING *',
-      [status, reason || null, id]
+      [status, rejectionReason, id]
     );
 
     if (result.rows.length === 0) {
@@ -187,7 +230,7 @@ const getTodayStats = async (req, res) => {
     const result = await db.query(`
       SELECT COUNT(*) as total_orders, COALESCE(SUM(total_price), 0) as total_revenue
       FROM orders
-      WHERE DATE(created_at) = CURRENT_DATE
+      WHERE DATE(created_at) = CURRENT_DATE AND status <> 'rejected'
     `);
     res.json({
       stats: {
@@ -212,7 +255,7 @@ const getUserOrders = async (req, res) => {
       FROM orders o
       LEFT JOIN order_items oi ON o.id = oi.order_id
       LEFT JOIN products p ON oi.product_id = p.id
-      WHERE o.user_id = $1 OR (regexp_replace(o.phone, '\\D', '', 'g') = $2 AND $2 != '')
+      WHERE o.user_id = $1 OR (o.user_id IS NULL AND regexp_replace(o.phone, '\\D', '', 'g') = $2 AND $2 != '')
       GROUP BY o.id
       ORDER BY o.created_at DESC
     `, [userId, userPhone]);

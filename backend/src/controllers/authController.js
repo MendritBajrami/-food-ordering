@@ -81,12 +81,12 @@ const updateProfile = async (req, res) => {
       }
       const newHash = await bcrypt.hash(newPassword, 10);
       await db.query(
-        'UPDATE users SET name = $1, address = $2, password_hash = $3 WHERE id = $4 RETURNING id, name, phone, address, role',
+        'UPDATE users SET name = COALESCE($1, name), address = COALESCE($2, address), password_hash = $3 WHERE id = $4 RETURNING id, name, phone, address, role',
         [name, address, newHash, userId]
       );
     } else {
       await db.query(
-        'UPDATE users SET name = $1, address = $2 WHERE id = $3 RETURNING id, name, phone, address, role',
+        'UPDATE users SET name = COALESCE($1, name), address = COALESCE($2, address) WHERE id = $3 RETURNING id, name, phone, address, role',
         [name, address, userId]
       );
     }
@@ -162,7 +162,14 @@ const adminUpdateUser = async (req, res) => {
   try {
     const { id } = req.params;
     const { role, name, address, phone, password } = req.body;
-    
+
+    if (phone) {
+      const duplicate = await db.query('SELECT id FROM users WHERE phone = $1 AND id <> $2', [phone, id]);
+      if (duplicate.rows.length > 0) {
+        return res.status(400).json({ error: 'Phone number already in use' });
+      }
+    }
+
     let updateQuery = 'UPDATE users SET role = COALESCE($1, role), name = COALESCE($2, name), address = COALESCE($3, address), phone = COALESCE($4, phone)';
     let params = [role, name, address, phone];
     

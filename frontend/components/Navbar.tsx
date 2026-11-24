@@ -26,7 +26,7 @@ export default function Navbar() {
           <div className="flex items-center gap-4 sm:gap-6">
             <Link
               href="/menu"
-              className="text-gray-600 hover:text-red-500 font-medium transition-colors hidden sm:block relative py-1 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-red-500 after:transition-all hover:after:w-full"
+              className="text-gray-600 hover:text-red-500 font-medium transition-colors relative py-1 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-red-500 after:transition-all hover:after:w-full"
             >
               Menu
             </Link>

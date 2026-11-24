@@ -92,7 +92,10 @@ export default function OrderDetailsPage() {
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Please Login</h1>
           <p className="text-gray-600 mb-8">You need to be logged in to view your order details.</p>
-          <Link href="/login">
+          <Link
+            href={`/login?redirect=/orders/${id}`}
+            onClick={() => sessionStorage.setItem('redirectAfterLogin', `/orders/${id}`)}
+          >
             <Button className="w-full">Sign In Now</Button>
           </Link>
         </div>

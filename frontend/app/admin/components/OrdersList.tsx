@@ -233,7 +233,8 @@ export default function OrdersList({ orders, onUpdateStatus }: Props) {
             {customerGroups.map(group => {
               // If customer has 2 or more orders, show collapsible group header
               if (group.orders.length >= 2) {
-                const isOpen = !!openGroupKeys[group.key];
+                // Show orders by default; collapse only when explicitly toggled
+                const isOpen = openGroupKeys[group.key] !== false;
                 const totalSpent = group.orders.reduce((sum, o) => sum + Number(o.total_price), 0);
 
                 return (

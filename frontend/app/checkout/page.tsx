@@ -40,9 +40,6 @@ export default function CheckoutPage() {
     }
   }, [user]);
 
-  const deliveryFee = formData.delivery_type === 'delivery' ? 2.99 : 0;
-  const grandTotal = Number(totalPrice) + deliveryFee;
-
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
@@ -124,6 +121,8 @@ export default function CheckoutPage() {
       };
 
       const response = await api.orders.create(orderData);
+      // Pass the confirmed order to the confirmation page (works for guests too)
+      sessionStorage.setItem('fastfood-last-order', JSON.stringify(response.order));
       clearCart();
       router.push(`/confirmation?orderId=${response.order.id}`);
     } catch (error) {
@@ -153,7 +152,10 @@ export default function CheckoutPage() {
       <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h2>
-          <p className="text-gray-500">Add some items before checkout</p>
+          <p className="text-gray-500 mb-6">Add some items before checkout</p>
+          <Link href="/menu" className="inline-flex items-center gap-2 bg-red-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-red-600 transition-colors">
+            Browse Menu
+          </Link>
         </div>
       </div>
     );
@@ -452,13 +454,13 @@ export default function CheckoutPage() {
                   <span className="text-gray-600">Subtotal</span>
                   <span>${Number(totalPrice).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Delivery Fee</span>
-                  <span>${Number(deliveryFee).toFixed(2)}</span>
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>Delivery</span>
+                  <span>Free</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold pt-2 border-t">
                   <span>Total</span>
-                  <span className="text-red-500">${Number(grandTotal).toFixed(2)}</span>
+                  <span className="text-red-500">${Number(totalPrice).toFixed(2)}</span>
                 </div>
               </div>
             </div>

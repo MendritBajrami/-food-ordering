@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Plus, ShoppingCart, Clock, Flame, Utensils, Star, X, SlidersHorizontal } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ChevronLeft, Plus, ShoppingCart, Clock, Utensils, CheckCircle2, X, SlidersHorizontal } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Product } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
@@ -110,11 +110,6 @@ export default function ProductDetailsPage() {
           animate={{ opacity: 1, x: 0 }}
           className="flex flex-col h-full"
         >
-          <div className="flex items-center gap-2 mb-4 text-orange-500">
-            <Star className="h-5 w-5 fill-current" />
-            <span className="font-black text-sm">4.9 (120+ Reviews)</span>
-          </div>
-
           <h1 className="text-5xl md:text-6xl font-black text-gray-900 mb-6 tracking-tight leading-none">
             {product.name}
           </h1>
@@ -167,9 +162,13 @@ export default function ProductDetailsPage() {
 
           <div className="grid grid-cols-3 gap-4 mb-10">
             {[
-              { icon: Clock, label: 'Cook Time', value: '15-20 min' },
-              { icon: Flame, label: 'Calories', value: '450 kcal' },
-              { icon: Utensils, label: 'Ingredients', value: 'Fresh' },
+              { icon: Clock, label: 'Prep Time', value: '15-20 min' },
+              {
+                icon: Utensils,
+                label: 'Ingredients',
+                value: product.ingredients?.length ? `${product.ingredients.length} items` : 'Fresh',
+              },
+              { icon: CheckCircle2, label: 'Availability', value: 'In stock' },
             ].map((feature, i) => (
               <div key={i} className="bg-white p-4 rounded-3xl border border-gray-100 flex flex-col items-center text-center">
                 <feature.icon className="h-6 w-6 text-red-500 mb-2" />
@@ -228,19 +227,6 @@ export default function ProductDetailsPage() {
         </motion.div>
       </div>
 
-      {/* Suggested Items (Static for now) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-20">
-        <h2 className="text-2xl font-black text-gray-900 mb-8">Goes great with...</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="bg-white p-4 rounded-[2rem] border border-gray-100 flex flex-col items-center">
-              <div className="relative w-full aspect-square rounded-2xl overflow-hidden mb-4 bg-gray-50 animate-pulse" />
-              <div className="h-4 bg-gray-50 rounded-full w-3/4 mb-2 animate-pulse" />
-              <div className="h-3 bg-gray-50 rounded-full w-1/2 animate-pulse" />
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

@@ -27,23 +27,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem(AUTH_STORAGE_KEY);
     if (stored) {
       try {
-        const { token } = JSON.parse(stored);
-        setToken(token);
-        // Always re-fetch user from backend so role changes are reflected immediately
+        const saved = JSON.parse(stored);
+        const { token } = saved;
+        // Re-fetch the user so role changes are reflected, but keep the session
+        // on transient/network failures instead of logging the user out.
         api.auth.getMe()
           .then(data => {
             setUser(data.user);
+            setToken(token);
             localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ user: data.user, token }));
           })
-          .catch(() => {
-            // Token expired or backend down — clear auth
-            localStorage.removeItem(AUTH_STORAGE_KEY);
-            setToken(null);
+          .catch(err => {
+            const msg = String(err?.message || '').toLowerCase();
+            const invalid = msg.includes('token') || msg.includes('user not found') || msg.includes('401');
+            if (invalid) {
+              localStorage.removeItem(AUTH_STORAGE_KEY);
+              setToken(null);
+            } else {
+              // Backend temporarily unreachable — restore the saved session
+              setToken(token);
+              if (saved.user) setUser(saved.user);
+            }
           })
           .finally(() => setIsLoading(false));
         return;
       } catch (e) {
         console.error('Failed to load auth from storage');
+        localStorage.removeItem(AUTH_STORAGE_KEY);
       }
     }
     setIsLoading(false);

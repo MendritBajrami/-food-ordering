@@ -8,7 +8,7 @@ import { Product } from '@/lib/types';
 
 const CATEGORIES = ['Burgers', 'Fries', 'Drinks', 'Combos', 'Desserts', 'Other'];
 
-const EMPTY_FORM = { name: '', description: '', price: '', image_url: '', category: 'Burgers' };
+const EMPTY_FORM = { name: '', description: '', price: '', image_url: '', category: 'Burgers', ingredients: '' };
 
 export default function ProductsPanel() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -36,7 +36,7 @@ export default function ProductsPanel() {
   const openAdd = () => { setEditProduct(null); setForm(EMPTY_FORM); setFormError(''); setShowModal(true); };
   const openEdit = (p: Product) => {
     setEditProduct(p);
-    setForm({ name: p.name, description: p.description || '', price: String(p.price), image_url: p.image_url, category: p.category });
+    setForm({ name: p.name, description: p.description || '', price: String(p.price), image_url: p.image_url, category: p.category, ingredients: (p.ingredients || []).join(', ') });
     setFormError('');
     setShowModal(true);
   };
@@ -50,7 +50,12 @@ export default function ProductsPanel() {
     setIsSaving(true);
     setFormError('');
     try {
-      const payload = { ...form, price: parseFloat(form.price) };
+      const payload = {
+        ...form,
+        price: parseFloat(form.price),
+        category: form.category.toLowerCase(),
+        ingredients: form.ingredients.split(',').map(s => s.trim()).filter(Boolean),
+      };
       if (editProduct) {
         await api.products.update(editProduct.id, payload);
       } else {
@@ -187,7 +192,7 @@ export default function ProductsPanel() {
                 <div>
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Image URL</label>
                   <input value={form.image_url} onChange={e => setForm(p => ({...p, image_url: e.target.value}))}
-                    placeholder="https://images.unsplash.com/..."
+                    placeholder="/images/products/..."
                     className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-red-400" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -215,6 +220,12 @@ export default function ProductsPanel() {
                     <textarea value={form.description} onChange={e => setForm(p => ({...p, description: e.target.value}))} rows={3}
                       placeholder="Short description..."
                       className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-red-400 resize-none" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Ingredients (comma separated)</label>
+                    <input value={form.ingredients} onChange={e => setForm(p => ({...p, ingredients: e.target.value}))}
+                      placeholder="Beef patty, Cheddar, Lettuce"
+                      className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-red-400" />
                   </div>
                 </div>
 

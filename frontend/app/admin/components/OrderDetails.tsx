@@ -104,14 +104,14 @@ export default function OrderDetails({ order, onClose, onUpdateStatus }: OrderDe
                       )}
                     </span>
                     <span className="text-gray-600">
-                      ${(item.price_at_purchase * item.quantity).toFixed(2)}
+                      ${(Number(item.price_at_purchase) * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 ))}
               </div>
               <div className="flex justify-between font-bold mt-3 pt-3 border-t">
                 <span>Total</span>
-                <span className="text-red-500">${order.total_price.toFixed(2)}</span>
+                <span className="text-red-500">${Number(order.total_price).toFixed(2)}</span>
               </div>
             </div>
 

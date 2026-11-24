@@ -7,7 +7,7 @@ const getAllProducts = async (req, res) => {
     const params = [];
 
     if (category) {
-      query += ' AND category = $1';
+      query += ' AND LOWER(category) = LOWER($1)';
       params.push(category);
     }
 
@@ -24,7 +24,7 @@ const getAllProducts = async (req, res) => {
 const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await db.query('SELECT * FROM products WHERE id = $1', [id]);
+    const result = await db.query('SELECT * FROM products WHERE id = $1 AND is_available = true', [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Product not found' });

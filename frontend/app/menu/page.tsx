@@ -75,7 +75,7 @@ export default function MenuPage() {
       {/* Cinematic Hero Section */}
       <div className="relative h-[50vh] flex items-center overflow-hidden">
         <Image 
-          src="https://images.unsplash.com/photo-1514356021116-dee3f2ef1d4f?q=80&w=2670&auto=format&fit=crop"
+          src="/images/products/dirty-louisiana.jpg"
           alt="Hero Background"
           fill
           className="object-cover scale-110 blur-[2px]"

@@ -13,9 +13,10 @@ import Button from '@/components/ui/Button';
 
 export default function MyOrdersPage() {
   const { user, token } = useAuth();
-  const { addItem } = useCart();
+  const { addItem, toggleDrawer } = useCart();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     if (token) {
@@ -26,10 +27,12 @@ export default function MyOrdersPage() {
   const loadOrders = async () => {
     try {
       setIsLoading(true);
+      setLoadError('');
       const data = await api.orders.getMyOrders();
       setOrders(data.orders);
     } catch (error) {
       console.error('Failed to load orders:', error);
+      setLoadError(error instanceof Error ? error.message : 'Could not load your orders');
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +53,8 @@ export default function MyOrdersPage() {
           console.error(`Could not reorder product ${item.product_id}`, e);
         }
       }
-      // Open cart drawer
+      // Show the updated cart so the customer sees what was added
+      toggleDrawer(true);
     } catch (error) {
       console.error('Reorder failed:', error);
     }
@@ -76,7 +80,7 @@ export default function MyOrdersPage() {
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Please Login</h1>
           <p className="text-gray-600 mb-8">You need to be logged in to view your order history.</p>
-          <Link href="/login">
+          <Link href="/login?redirect=/orders" onClick={() => sessionStorage.setItem('redirectAfterLogin', '/orders')}>
             <Button className="w-full">Sign In Now</Button>
           </Link>
         </div>
@@ -111,6 +115,15 @@ export default function MyOrdersPage() {
                 <div className="h-4 bg-gray-100 rounded w-2/3" />
               </div>
             ))}
+          </div>
+        ) : loadError ? (
+          <div className="bg-white rounded-2xl p-10 text-center border border-gray-100">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Package className="h-8 w-8 text-red-500" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Could not load your orders</h2>
+            <p className="text-gray-500 mb-6">{loadError}</p>
+            <Button onClick={loadOrders}>Try Again</Button>
           </div>
         ) : orders.length === 0 ? (
           <motion.div 
@@ -191,20 +204,15 @@ export default function MyOrdersPage() {
                             View Details
                           </Button>
                         </Link>
-                        <Link href="/menu">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="flex items-center gap-2 group/btn"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              handleReorder(order);
-                            }}
-                          >
-                            <RefreshCcw className="h-4 w-4 group-hover/btn:rotate-180 transition-transform duration-500" />
-                            Reorder
-                          </Button>
-                        </Link>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex items-center gap-2 group/btn"
+                          onClick={() => handleReorder(order)}
+                        >
+                          <RefreshCcw className="h-4 w-4 group-hover/btn:rotate-180 transition-transform duration-500" />
+                          Reorder
+                        </Button>
                       </div>
                     </div>
                   </div>

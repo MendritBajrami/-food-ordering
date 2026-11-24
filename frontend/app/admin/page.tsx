@@ -23,6 +23,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState({ total_orders: 0, total_revenue: 0 });
   const [newOrderAlert, setNewOrderAlert] = useState(false);
   const [newOrderCount, setNewOrderCount] = useState(0);
+  const [actionMessage, setActionMessage] = useState('');
 
   const loadOrders = useCallback(async () => {
     if (!token) return;
@@ -53,13 +54,13 @@ export default function AdminPage() {
       socket.emit('join-admin', token);
     });
 
-    socket.on('new-order', (data: { order: Order }) => {
-      setOrders(prev => [data.order, ...prev]);
-      setStats(prev => ({ ...prev, total_orders: prev.total_orders + 1 }));
+    socket.on('new-order', () => {
+      // Refetch so the order includes its items (socket payload is minimal)
+      loadOrders();
+      loadStats();
       setNewOrderAlert(true);
       setNewOrderCount(c => c + 1);
       setTimeout(() => setNewOrderAlert(false), 5000);
-      // Notification sound or alert could go here
     });
 
     socket.on('order-updated', ({ order_id, status }: { order_id: number; status: string }) => {
@@ -76,7 +77,13 @@ export default function AdminPage() {
       await api.orders.updateStatus(orderId, status, reason);
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: status as Order['status'], rejection_reason: reason } : o));
       loadStats();
-    } catch (e) { console.error(e); }
+      setActionMessage(`Order #${orderId} updated to ${status}`);
+    } catch (e) {
+      console.error(e);
+      setActionMessage(`Could not update order #${orderId}: ${e instanceof Error ? e.message : 'unknown error'}`);
+    } finally {
+      setTimeout(() => setActionMessage(''), 4000);
+    }
   };
 
   if (authLoading) {
@@ -166,6 +173,11 @@ export default function AdminPage() {
 
       {/* Page Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {actionMessage && (
+          <div className="mb-4 bg-blue-50 text-blue-800 border border-blue-100 rounded-xl px-4 py-3 text-sm font-semibold">
+            {actionMessage}
+          </div>
+        )}
         <AnimatePresence mode="wait">
           {tab === 'orders' && (
             <motion.div key="orders" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>

@@ -10,7 +10,7 @@ import Input from '@/components/ui/Input';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, logout, token, updateUser } = useAuth();
+  const { user, logout, token, updateUser, isLoading: authLoading } = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordPanel, setShowPasswordPanel] = useState(false);
@@ -37,9 +37,11 @@ export default function ProfilePage() {
   const [deleteError, setDeleteError] = useState('');
 
   React.useEffect(() => {
+    // Wait for AuthContext to finish restoring the session before redirecting
+    if (authLoading) return;
     if (!user) router.push('/login');
     else setFormData({ name: user.name, address: user.address || '' });
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
